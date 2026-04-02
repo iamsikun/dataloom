@@ -1,0 +1,6 @@
+README.md
+pyproject.toml
+src/dataloom.egg-info/PKG-INFO
+src/dataloom.egg-info/SOURCES.txt
+src/dataloom.egg-info/dependency_links.txt
+src/dataloom.egg-info/top_level.txt
