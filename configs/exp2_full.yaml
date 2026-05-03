@@ -1,0 +1,37 @@
+experiment_id: exp2_adaptive
+profile: full
+schema_version: 1
+seed_root: 20260502
+
+n_grid: [200, 500, 1000, 2000, 5000, 10000]
+beta_grid: [0.4, 0.5, 0.75, 1.0, 1.5]
+rho_grid: [0.0, 1.0, 2.0]
+
+constants:
+  a: 1.0
+  B0: 1.0
+  sigma_s2: 1.0
+  kappa: 1.0
+  theta_star: 0.0
+
+replications:
+  default: 2000
+  overrides:
+    - {n_min: 5001, R: 1000}
+
+estimators:
+  - real_only_all
+  - corrected_oracle_gn
+  - safe_corrected_oracle_gn
+  - corrected_adaptive_gn
+  - adaptive_parametric_foc
+  - adaptive_nonparametric_grid
+  - safe_corrected_adaptive_gn
+
+parallel:
+  unit: cell
+  n_jobs: -1
+  backend: loky
+
+output:
+  results_root: results/

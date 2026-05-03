@@ -4,3 +4,10 @@ Version: 0.1.0
 Summary: Add your description here
 Requires-Python: >=3.13
 Description-Content-Type: text/markdown
+Requires-Dist: numpy>=2.0
+Requires-Dist: scipy>=1.14
+Requires-Dist: pandas>=2.2
+Requires-Dist: joblib>=1.4
+Requires-Dist: matplotlib>=3.9
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: pyarrow>=24.0.0
