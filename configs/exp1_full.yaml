@@ -14,6 +14,7 @@ constants:
   sigma_s2: 1.0
   kappa: 1.0
   theta_star: 0.0
+  fast_mean: true
 
 # §4.6: 5000 reps for n<=5000, 2000 for larger.
 replications:

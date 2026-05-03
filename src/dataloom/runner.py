@@ -173,6 +173,7 @@ def run_cell(
         sigma_s2=constants.get("sigma_s2", 1.0),
         kappa=constants.get("kappa", 1.0),
         theta_star=constants.get("theta_star", 0.0),
+        fast_mean=bool(constants.get("fast_mean", False)),
     )
     truth_params = {
         "a": params.a,

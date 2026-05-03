@@ -1,0 +1,18 @@
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Results: raw parquet (large; treat as build artifacts)
+results/exp*__*/raw/
+results/exp*__*/figures/
+results/exp*__*/
+
+# Keep the summary report committed
+!results/full_run_summary.md

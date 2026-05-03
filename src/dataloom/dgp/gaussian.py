@@ -28,6 +28,7 @@ class GaussianParams:
     sigma_s2: float = 1.0
     kappa: float = 1.0
     theta_star: float = 0.0
+    fast_mean: bool = False
 
     @property
     def m(self) -> int:
@@ -50,22 +51,39 @@ def sample_real(params: GaussianParams, rng: np.random.Generator) -> np.ndarray:
 
 
 def make_synth_fn(params: GaussianParams):
-    """Closure (x: int, rng) -> ndarray of m synthetic Gaussian observations.
+    """Closure (x: int, rng) -> ndarray of synthetic Gaussian observations.
 
     The synthetic mean is shifted by B0 * x^(-beta); when x = 0 we treat the
     bias as +infinite (synthetic data uninformative) and return NaNs so any
     estimator that uses it will fail loudly. Estimators that don't need
     synthetic data must declare needs_synth=False so the runner skips this.
+
+    When params.fast_mean is True, returns a length-1 array drawn from
+    N(theta_star + bias, sigma_s2 / m), which is the exact distribution of the
+    sample mean of m full draws. Correct when the estimand is np.mean (the only
+    estimand used in Exp 1 and Exp 2).
     """
     def synth_fn(x: int, rng: np.random.Generator) -> np.ndarray:
         if x <= 0:
             return np.full(params.m, np.nan)
         bias = params.B0 * (x ** (-params.beta))
+        if params.fast_mean:
+            return np.array([
+                params.theta_star
+                + bias
+                + rng.normal(loc=0.0, scale=np.sqrt(params.sigma_s2 / params.m))
+            ])
         return (
             params.theta_star
             + bias
             + rng.normal(loc=0.0, scale=np.sqrt(params.sigma_s2), size=params.m)
         )
+
+    # Attach metadata so bias_curve can recover the correct variance even when
+    # fast_mean=True returns a length-1 array.
+    synth_fn.fast_mean = params.fast_mean  # type: ignore[attr-defined]
+    synth_fn.m = params.m                  # type: ignore[attr-defined]
+    synth_fn.sigma_s2 = params.sigma_s2    # type: ignore[attr-defined]
 
     return synth_fn
 
