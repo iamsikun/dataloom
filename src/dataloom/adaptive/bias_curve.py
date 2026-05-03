@@ -80,18 +80,27 @@ def estimate_bias_curve(
     var_S = np.empty(len(pilot_grid))
     sigma_s2_estimates = []
 
+    _fn_fast_mean = getattr(synth_fn, "fast_mean", False)
+    _fn_m = getattr(synth_fn, "m", None)
+    _fn_sigma_s2 = getattr(synth_fn, "sigma_s2", None)
+
     for i, x_j in enumerate(pilot_grid):
         Z = synth_fn(int(x_j), rng)
         theta_S = estimand(Z)
         if len(Z) >= 2:
             s2 = float(np.var(Z, ddof=1))
+            var_S_hat = s2 / len(Z)
+        elif _fn_fast_mean and _fn_m is not None and _fn_sigma_s2 is not None:
+            # Z is a length-1 draw representing the mean of _fn_m full observations.
+            # Its variance is sigma_s2/_fn_m, not sigma_s2.  Recover s2=sigma_s2
+            # for the sigma_s2_hat estimator and set var_S_hat correctly.
+            s2 = _fn_sigma_s2
+            var_S_hat = _fn_sigma_s2 / _fn_m
         else:
-            # Single synthetic observation (m=1, persistent_variance regime).
-            # Plug-in to a_hat as a coarse default; downstream safe variants
-            # will fall back to real-only anyway.
+            # m=1 (persistent_variance regime) or no metadata available.
             s2 = a_hat
+            var_S_hat = s2 / max(len(Z), 1)
         sigma_s2_estimates.append(s2)
-        var_S_hat = s2 / max(len(Z), 1)
         var_S[i] = var_S_hat
         diff2 = float((theta_S - theta_R_V) ** 2)
         bias2[i] = max(diff2 - var_S_hat - var_R_V, 0.0)

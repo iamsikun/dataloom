@@ -13,6 +13,7 @@ constants:
   sigma_s2: 1.0
   kappa: 1.0
   theta_star: 0.0
+  fast_mean: true
 
 replications:
   default: 2000

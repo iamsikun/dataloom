@@ -41,16 +41,19 @@ def naive_pooling(
 
     _, est_idx = split_indices(n, x, rng)
     Z = synth_fn(x, rng)
-    pooled = np.concatenate([X[est_idx], Z])
-    theta_hat = estimand(pooled)
+    theta_R = estimand(X[est_idx])
+    theta_S = estimand(Z)
 
     a = truth_params["a"]
     v_n = truth_params["v_n"]
     c = truth_params["c"]
     beta = truth_params["beta"]
+    # Use truth_params["m"] so the weighted formula is correct even when
+    # synth_fn returns a length-1 fast-mean draw instead of all m obs.
+    m = truth_params["m"]
     b = v_n + c * (x ** (-2.0 * beta)) if x > 0 else np.inf
     n_e = n - x
-    m = len(Z)
+    theta_hat = (n_e * theta_R + m * theta_S) / (n_e + m) if (n_e + m) > 0 else float("nan")
     # alpha implied by sample-size weighting (informational only)
     alpha_implied = n_e / (n_e + m) if (n_e + m) > 0 else None
     return EstimatorResult(
