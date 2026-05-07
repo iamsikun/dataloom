@@ -1,0 +1,142 @@
+\documentclass{article}
+
+% NeurIPS 2026 main-track double-blind submission.
+\usepackage{neurips_2026}
+
+% Encoding & fonts
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+\usepackage{comment}
+
+% Math
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\usepackage{nicefrac}
+\usepackage{bm}
+
+% Floats
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{threeparttable}
+\usepackage{subcaption}
+\usepackage{xcolor}
+
+% Algorithms
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% Lists
+\usepackage{enumitem}
+
+% Hyperref + cleveref (cleveref must be loaded last among ref packages)
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage[capitalize,noabbrev]{cleveref}
+
+% --- Theorem environments (shared counter, scoped to section) ---
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Cleveref names
+\crefname{theorem}{Theorem}{Theorems}
+\crefname{proposition}{Proposition}{Propositions}
+\crefname{lemma}{Lemma}{Lemmas}
+\crefname{corollary}{Corollary}{Corollaries}
+\crefname{assumption}{Assumption}{Assumptions}
+\crefname{algorithm}{Algorithm}{Algorithms}
+\crefname{equation}{Eq.}{Eqs.}
+\crefname{section}{Section}{Sections}
+\crefname{subsection}{Section}{Sections}
+\crefname{appendix}{Appendix}{Appendices}
+\crefname{figure}{Figure}{Figures}
+\crefname{table}{Table}{Tables}
+
+% Convenience macros
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\MSE}{MSE}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\1}{\mathbf{1}}
+
+% --- Title ---
+\title{Optimal Real-Data Allocation for\\Synthetic-Data-Augmented Inference}
+
+% Anonymous author block for double-blind submission.
+\author{%
+  Sikun Xu \\ Olin Business School \\ Washington University in St.~Louis \\ St.~Louis, MO 63130 \\ \texttt{sikun@wustl.edu} \\
+  \And
+  Zineng Xu \\ National University of Singapore \\ \texttt{XXX@XXX.edu} \\
+  \And
+Mingduo Zhao \\ University of California, Berkeley \\ \texttt{XXX@XXX.edu}\\ }
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  \input{sections/abstract}
+\end{abstract}
+
+\section{Introduction}
+\input{sections/introduction}
+
+\section{Setup}
+\input{sections/setup}
+
+\section{Optimal mixing and corrected allocation}
+\input{sections/optimal_mixing_and_corrected_allocation}
+
+\section{Allocation phase diagram}
+\input{sections/allocation_phase_diagram}
+
+\section{Adaptive method and inference}
+\input{sections/methodology}
+
+\section{Experiments}
+\input{sections/experiments}
+
+\section{Conclusion}
+\input{sections/related_work}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\appendix
+
+\section{Plateau bias}
+\input{sections/plateau_bias}
+
+\section{Asymptotic distribution and Wald inference}
+\input{sections/asymptotic_distribution_and_wald_inference}
+
+\section{Proofs of main results}
+\input{sections/experiments_1}
+
+\section{Adaptive estimator pseudocode}
+\input{sections/adaptive_estimator_pseudocode}
+
+\section{Additional experiments}
+\input{sections/experiments_2}
+
+\section{Implementation, compute, and reproducibility}
+\input{sections/implementation_compute_and_reproducibility}
+
+\end{document}

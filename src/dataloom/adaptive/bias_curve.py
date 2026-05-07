@@ -35,6 +35,10 @@ class BiasCurveFit:
     a_hat: float
     sigma_s2_hat: float
     v_hat: float                   # plug-in v_n = sigma_s2_hat / m
+    n_positive: int = 0
+    pilot_repeats: int = 1
+    fit_reliable: bool = True
+    fit_status: str = "ok"
 
 
 def default_pilot_grid(n: int) -> np.ndarray:
@@ -61,6 +65,9 @@ def estimate_bias_curve(
     estimand: Callable[[np.ndarray], float],
     pilot_grid: np.ndarray | None = None,
     m: int,
+    pilot_repeats: int | None = None,
+    min_positive: int = 3,
+    reference: str = "validation",
 ) -> BiasCurveFit:
     """Run the pilot protocol and fit (β̂, ĉ).
 
@@ -70,11 +77,18 @@ def estimate_bias_curve(
     if pilot_grid is None:
         pilot_grid = default_pilot_grid(n)
 
-    val = X[n - n_v :]
-    rest = X[: n - n_v]
-    theta_R_V = estimand(val)
     a_hat = float(np.var(X, ddof=1))   # use all real for the variance plug-in
-    var_R_V = a_hat / max(n_v, 1)
+    if reference == "validation":
+        if n_v <= 0:
+            raise ValueError("n_v must be positive when reference='validation'")
+        val = X[n - n_v :]
+        theta_R_V = estimand(val)
+        var_R_V = a_hat / n_v
+    elif reference == "all":
+        theta_R_V = estimand(X)
+        var_R_V = a_hat / n
+    else:
+        raise ValueError(f"unknown bias-curve reference={reference!r}")
 
     bias2 = np.empty(len(pilot_grid))
     var_S = np.empty(len(pilot_grid))
@@ -83,23 +97,38 @@ def estimate_bias_curve(
     _fn_fast_mean = getattr(synth_fn, "fast_mean", False)
     _fn_m = getattr(synth_fn, "m", None)
     _fn_sigma_s2 = getattr(synth_fn, "sigma_s2", None)
+    if pilot_repeats is None:
+        # Repeating fast-mean pilots is cheap and reduces the main failure mode:
+        # pilot bias estimates collapsing to zero due to synthetic/validation noise.
+        pilot_repeats = 8 if _fn_fast_mean else 1
+    pilot_repeats = max(1, int(pilot_repeats))
 
     for i, x_j in enumerate(pilot_grid):
-        Z = synth_fn(int(x_j), rng)
-        theta_S = estimand(Z)
-        if len(Z) >= 2:
-            s2 = float(np.var(Z, ddof=1))
-            var_S_hat = s2 / len(Z)
-        elif _fn_fast_mean and _fn_m is not None and _fn_sigma_s2 is not None:
-            # Z is a length-1 draw representing the mean of _fn_m full observations.
-            # Its variance is sigma_s2/_fn_m, not sigma_s2.  Recover s2=sigma_s2
-            # for the sigma_s2_hat estimator and set var_S_hat correctly.
-            s2 = _fn_sigma_s2
-            var_S_hat = _fn_sigma_s2 / _fn_m
-        else:
-            # m=1 (persistent_variance regime) or no metadata available.
-            s2 = a_hat
-            var_S_hat = s2 / max(len(Z), 1)
+        theta_s_repeats = np.empty(pilot_repeats, dtype=float)
+        var_s_repeats = np.empty(pilot_repeats, dtype=float)
+        s2_repeats = np.empty(pilot_repeats, dtype=float)
+        for k in range(pilot_repeats):
+            Z = synth_fn(int(x_j), rng)
+            theta_s_repeats[k] = estimand(Z)
+            if len(Z) >= 2:
+                s2 = float(np.var(Z, ddof=1))
+                var_S_hat = s2 / len(Z)
+            elif _fn_fast_mean and _fn_m is not None and _fn_sigma_s2 is not None:
+                # Z is a length-1 draw representing the mean of _fn_m full observations.
+                # Its variance is sigma_s2/_fn_m, not sigma_s2.  Recover s2=sigma_s2
+                # for the sigma_s2_hat estimator and set var_S_hat correctly.
+                s2 = _fn_sigma_s2
+                var_S_hat = _fn_sigma_s2 / _fn_m
+            else:
+                # m=1 (persistent_variance regime) or no metadata available.
+                s2 = a_hat
+                var_S_hat = s2 / max(len(Z), 1)
+            s2_repeats[k] = s2
+            var_s_repeats[k] = var_S_hat
+        theta_S = float(theta_s_repeats.mean())
+        # The pilot estimate averages independent synthetic estimates.
+        var_S_hat = float(var_s_repeats.mean() / pilot_repeats)
+        s2 = float(np.median(s2_repeats))
         sigma_s2_estimates.append(s2)
         var_S[i] = var_S_hat
         diff2 = float((theta_S - theta_R_V) ** 2)
@@ -116,9 +145,13 @@ def estimate_bias_curve(
     # Count locations where raw bias2 violates monotonicity.
     monotonicity_violations = int(np.sum(np.diff(bias2) > 0))
 
-    # Power-law fit on positive bias2 only; collapse to last-resort defaults if too few points.
+    # Power-law fit on positive bias2 only. Too few positive points is not
+    # evidence of zero bias; it means the pilot is underpowered. Fail closed.
     pos = bias2 > 0
-    if pos.sum() >= 2:
+    n_positive = int(pos.sum())
+    fit_reliable = True
+    fit_status = "ok"
+    if n_positive >= min_positive:
         log_x = np.log(pilot_grid[pos].astype(float))
         log_b2 = np.log(bias2[pos])
         slope, intercept = np.polyfit(log_x, log_b2, 1)
@@ -129,11 +162,21 @@ def estimate_bias_curve(
         ss_res = float(np.sum((log_b2 - pred) ** 2))
         ss_tot = float(np.sum((log_b2 - log_b2.mean()) ** 2))
         powerlaw_r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else float("nan")
+        if not np.isfinite(beta_hat) or not np.isfinite(c_hat):
+            fit_reliable = False
+            fit_status = "nonfinite_powerlaw_fit"
+        elif beta_hat <= 0.0 or c_hat <= 0.0:
+            fit_reliable = False
+            fit_status = "nondecreasing_or_nonpositive_powerlaw_fit"
     else:
-        # Bias estimates all collapsed to zero. Treat as "synthetic effectively unbiased":
-        beta_hat = 5.0
-        c_hat = max(float(bias2.max()), 1e-12)
+        # Conservative fallback. With beta=0 the estimated bias curve is flat,
+        # so grid minimization selects real-only unless the data strongly support
+        # synthetic use through a reliable fit.
+        beta_hat = 0.0
+        c_hat = max(a_hat, float(bias2.max()), 1e-12)
         powerlaw_r2 = float("nan")
+        fit_reliable = False
+        fit_status = f"too_few_positive_bias_points:{n_positive}"
 
     return BiasCurveFit(
         pilot_x=pilot_grid.astype(int),
@@ -148,6 +191,10 @@ def estimate_bias_curve(
         a_hat=a_hat,
         sigma_s2_hat=sigma_s2_hat,
         v_hat=v_hat,
+        n_positive=n_positive,
+        pilot_repeats=pilot_repeats,
+        fit_reliable=fit_reliable,
+        fit_status=fit_status,
     )
 
 

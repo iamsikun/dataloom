@@ -1,0 +1,59 @@
+\label{sec:adaptive}
+
+The oracle allocation $x_n^\star$ in Theorem~\ref{thm:phase} depends on unknown quantities: the real-estimator variance constant $a$, the synthetic-variance scale $v_n$, and the bias-curve constants $(c,\beta)$. \Cref{ssec:adaptive} gives a grid estimator that learns these quantities from pilot calibrations. \Cref{ssec:adaptive-oracle} shows that it tracks the oracle when the estimated risk curve is uniformly accurate in relative terms. \Cref{app:wald} (in the appendix, for space) then explains when the resulting point estimator supports ordinary Wald intervals.
+
+\subsection{Adaptive grid-minimization estimator}\label{ssec:adaptive}
+
+The idea is to estimate the profiled risk $R_n(x)$ on a discrete grid, choose the smallest estimated risk, and then apply the exact safety check $x\,B_n(x)<a$ from \Cref{prop:safe}. We use grid minimization rather than solving the first-order condition \cref{eq:foc} directly. The grid handles the boundary choices $x=0$ and $x=n$, avoids the smaller local maximum from \Cref{lem:critical}, and does not require estimating $\beta$ at a parametric rate.
+
+% [Algorithm box (\Cref{alg:adaptive}) moved verbatim to \Cref{app:algbox}
+%  to fit the 9-page main-content limit; the prose description below
+%  references the full pseudocode in the appendix.]
+
+\iffalse  %% original Algorithm 1 box -- now reproduced verbatim in Appendix
+\begin{algorithm}[!t]
+\caption{Corrected adaptive Generalized-Neyman estimator.}
+\label{alg:adaptive}
+\begin{algorithmic}[1]
+\State \textbf{Input:} real sample $X_1,\dots,X_n$; calibratable generator $\mathcal{G}$; pilot grid $\mathcal{G}_{\mathrm{pilot}}$; full grid $\mathcal{G}_n^+:=\mathcal{G}_n\cup\{0,n\}$; number of folds $K$.
+\State Cross-fit split $[n]$ into $K$ folds; for each fold, allocate out-of-fold data into calibration-pilot, validation, and final-estimation slices. Loop over folds.
+\State Estimate $\hat a$ as the empirical variance of the influence-function values $\psi(X_i)$ on the out-of-fold slice.
+\For{each $x_j\in\mathcal{G}_{\mathrm{pilot}}$}
+  \State Calibrate $\mathcal{G}$ on $x_j$ pilot observations, draw $m_n$ synthetic points, compute $\hat\theta_S(x_j)$, and estimate $\hat v_n$ as the synthetic sample variance divided by $m_n$.
+  \State Validation-debias the squared bias: $\widehat{b^2}(x_j)=\bigl[(\hat\theta_S(x_j)-\hat\theta_R^V)^2-\widehat{\mathrm{Var}}(\hat\theta_S(x_j))-\widehat{\mathrm{Var}}(\hat\theta_R^V)\bigr]_+$, where $\hat\theta_R^V$ is the real estimator on the validation slice.
+\EndFor
+\State Fit a power law by ordinary least squares: $\log\widehat{b^2}(x_j)=\log\hat c-2\hat\beta\log x_j+\epsilon_j$.
+\State Form $\widehat{B}_n(x)=\hat v_n+\hat c\,x^{-2\hat\beta}$, $\widehat V_R(x)=\hat a/(n-x)$, and $\widehat R_n(x)=\widehat V_R(x)\widehat{B}_n(x)/[\widehat V_R(x)+\widehat{B}_n(x)]$ on $\mathcal{G}_n^+$, with $\widehat R_n(0)=\hat a/n$ and $\widehat R_n(n)=\widehat{B}_n(n)$.
+\State $\hat x_n\gets \argmin_{x\in\mathcal{G}_n^+}\widehat R_n(x)$.
+\State \textbf{Safety check:} if $\hat x_n\,\widehat{B}_n(\hat x_n)\ge\hat a$, return the all-real estimator $\hat\theta_R$.
+\State Otherwise set $\hat\alpha=\widehat{B}_n(\hat x_n)/[\widehat V_R(\hat x_n)+\widehat{B}_n(\hat x_n)]$ and return $\hat\theta=\hat\alpha\,\hat\theta_R(\hat x_n)+(1-\hat\alpha)\,\hat\theta_S(\hat x_n)$.
+\State \textbf{Output:} cross-fit average of $\hat\theta$ over the $K$ folds.
+\end{algorithmic}
+\end{algorithm}
+\fi  %% end of moved Algorithm 1 box
+
+The full pseudocode (\Cref{alg:adaptive} in \Cref{app:algbox}) uses the safe-improvement boundary from \Cref{prop:safe} directly. The same inequality that defines when synthetic augmentation can help also tells the procedure when to abstain. In step~6 of the pseudocode the squared bias is validation-debiased as $\widehat{b^2}(x_j)=\bigl[(\hat\theta_S(x_j)-\hat\theta_R^V)^2-\widehat{\mathrm{Var}}(\hat\theta_S(x_j))-\widehat{\mathrm{Var}}(\hat\theta_R^V)\bigr]_+$, and the truncation $[\,\cdot\,]_+$ prevents Monte~Carlo noise from producing negative squared-bias estimates; below we assume that this truncation is harmless on the part of the grid where variance dominates.
+
+\subsection{Oracle inequality}\label{ssec:adaptive-oracle}
+
+Grid minimization does not require $\widehat R_n$ to be accurate in absolute units. It only needs to rank grid points correctly with high probability. The right condition is uniform relative consistency.
+
+\begin{theorem}[Adaptive oracle inequality]\label{thm:adaptive}
+Let $\mathcal{G}_n^+:=\mathcal{G}_n\cup\{0,n\}$, $x_n^\star:=\argmin_{x\in\mathcal{G}_n^+}R_n(x)$, and $\hat x_n:=\argmin_{x\in\mathcal{G}_n^+}\widehat R_n(x)$. Suppose
+\begin{equation}\label{eq:Delta-n}
+  \Delta_n\;:=\;\sup_{x\in\mathcal{G}_n^+}\biggl|\frac{\widehat R_n(x)}{R_n(x)}-1\biggr|\;\stackrel{p}{\to}\;0.
+\end{equation}
+Then $R_n(\hat x_n)/R_n(x_n^\star)\stackrel{p}{\to}1$. If furthermore the grid satisfies $\inf_{x\in\mathcal{G}_n}R_n(x)/\inf_{x\in[0,n]}R_n(x)\to 1$, then $R_n(\hat x_n)/\inf_{x\in[0,n]}R_n(x)\stackrel{p}{\to}1$.
+\end{theorem}
+
+In words, the empirical risk curve only needs to be uniformly close to the true curve in \emph{ratio}. A constant multiplicative error in $\widehat R_n$ does not change the argmin, so the grid procedure can inherit the oracle rate even when the individual estimates of $a$, $v_n$, $c$, and $\beta$ converge slowly. This is why the grid version is preferable to a plug-in solver of the first-order condition, which would be more sensitive to slow convergence of $\hat\beta$.
+
+% [Subsection ``Asymptotic distribution and Wald inference'' moved to
+%  Appendix~\ref{app:wald} to fit the 9-page main-content limit. The
+%  centered CLT (Proposition~\ref{prop:clt}), Wald-coverage corollary
+%  (Corollary~\ref{cor:wald}), and discussion are reproduced there verbatim,
+%  with proofs in \Cref{proof:clt,proof:wald}.]
+
+
+% =====================================================================
+% POLISHED

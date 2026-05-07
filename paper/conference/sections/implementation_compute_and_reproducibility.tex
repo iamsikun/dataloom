@@ -1,0 +1,66 @@
+\label{app:impl}
+
+This appendix collects the operational choices behind \Cref{alg:adaptive} and the experiments of \Cref{sec:experiments}, plus the NeurIPS 2026 reproducibility checklist items.
+
+\subsection{Pilot grid and cross-fitting}\label{ssec:impl-grid}
+
+\paragraph{Pilot grid.} The default pilot grid for the bias-curve fit in \Cref{alg:adaptive} is
+\[
+  \mathcal{G}_{\mathrm{pilot}}\;=\;\{5,\,10,\,20,\,40,\,80,\,160,\,320,\,640\}\;\cap\;[1,\,n/2],
+\]
+that is, the geometric grid truncated so that no pilot point exceeds half the sample. For small $n$ (typically $n\le 200$), $\mathcal{G}_{\mathrm{pilot}}$ collapses to its smallest few points; we take this as a graceful degradation to a near-uniform grid rather than as a separate small-$n$ branch. The full minimisation grid $\mathcal{G}_n^+$ over which $\widehat R_n$ is evaluated is the same geometric grid extended out to $n$, with the boundary points $\{0,n\}$ adjoined as required by Theorem~\ref{thm:adaptive}.
+
+\paragraph{Cross-fitting.} We use $K=5$ folds for cross-fitting throughout the synthetic experiments. Within each fold, the out-of-fold portion of $[n]$ is partitioned into a calibration-pilot slice (used to calibrate the generator at each $x_j\in\mathcal{G}_{\mathrm{pilot}}$), a validation slice (used to compute $\hat\theta_R^V$ and the variance-debiased squared bias), and a final-estimation slice (used to evaluate the chosen $\hat x_n$). Final outputs are averaged over folds.
+
+\paragraph{Bias estimation.} Squared bias is debiased on the validation slice as
+\[
+  \widehat{b^2}(x_j)\;=\;\bigl[(\hat\theta_S(x_j)-\hat\theta_R^V)^2\;-\;\widehat{\mathrm{Var}}(\hat\theta_S(x_j))\;-\;\widehat{\mathrm{Var}}(\hat\theta_R^V)\bigr]_+,
+\]
+where the positive-part truncation prevents Monte Carlo noise from producing meaningless negative values; the raw (untruncated) value is logged separately. The exponent $(\hat\beta,\hat c)$ is then recovered by ordinary least squares on $\log\widehat{b^2}(x_j)$ vs.\ $\log x_j$ over $x_j\in\mathcal{G}_{\mathrm{pilot}}$, restricted to grid points where the truncated bias is strictly positive.
+
+\subsection{Failure-mode logging}\label{ssec:impl-failures}
+
+Following the project's failure-logging policy, the following events are logged into the master long-format output schema (see \S\ref{ssec:impl-repro}) rather than silently dropped:
+\begin{itemize}[leftmargin=*]
+\item Nonmonotone empirical learning curves: the OLS slope step is run on the truncated grid and the goodness-of-fit residual is recorded.
+\item Generator training failures: the offending replication is flagged (\texttt{failure\_flag}, \texttt{failure\_reason}) and retained, not retried.
+\item Negative debiased squared-bias estimates: positive part used downstream, raw value logged.
+\item Multiple FOC roots: grid minimisation avoids the issue by construction; if a root-solver path is invoked, all roots are logged.
+\item Boundary optima ($\hat x_n\in\{0,n\}$): kept as legitimate selections, not forced to the interior.
+\item Safety-fallback decisions: flagged via \texttt{safe\_pass}, \texttt{safe\_margin}, \texttt{fallback\_used}.
+\item Coverage failures of naive intervals: scientifically informative (Corollary~\ref{cor:wald}), so recorded rather than suppressed.
+\end{itemize}
+
+\subsection{Compute}\label{ssec:impl-compute}
+
+\paragraph{Synthetic experiments.} Experiments~1, 2, 3, and 4 are pure CPU and embarrassingly parallel across replications. Experiment~1 (full-profile phase-diagram sweep over $\beta\in\{0.25,\dots,2\}$, $\rho\in\{0,\dots,3\}$, $n\in\{100,\dots,20000\}$) produces $9{,}996{,}000$ raw rows of long-format output. Experiment~2 (full-profile adaptive evaluation) produces $1{,}155{,}000$ rows. Experiment~3 (full-profile multichannel) produces $48{,}000$ rows; Experiment~4 (full-profile inference) produces $280{,}000$ rows. Wall-clock time on a standard multi-core workstation is on the order of a few hours per experiment; we do not report a specific machine since the workload is CPU-only and parallelism-bound.
+
+\paragraph{Semi-synthetic experiments.} Experiment~A (tabular Adult benchmark, Gaussian-copula generator) is CPU-only and produces $72{,}000$ raw rows at full profile. Experiment~B (causal IHDP-style benchmark) uses scikit-learn nuisance estimators (gradient-boosted regressors and logistic propensities) within an AIPW real estimator, also CPU-only, and produces $14{,}400$ raw rows at full profile. Both are run at full profile (see Appendix~\ref{app:experiments}).
+
+\paragraph{No GPU is required.} No experiment in this paper requires a GPU.
+
+\subsection{Reproducibility}\label{ssec:impl-repro}
+
+\begin{itemize}[leftmargin=*]
+\item Random seeds are fixed per replication and stored in the \texttt{seed} column of the master output schema.
+\item The configuration YAML used for every run is committed alongside the result directory.
+\item Raw long-format replication results are saved \emph{before} any aggregation; aggregated tables are derived deterministically from the long-format files.
+\item All figures are saved in both PDF and PNG formats.
+\item The same estimator-name strings (\texttt{real\_only\_all}, \texttt{corrected\_oracle\_gn}, \texttt{corrected\_adaptive\_gn}, \texttt{safe\_corrected\_adaptive\_gn}, \texttt{validation\_debiased\_gn}, etc.) are used across synthetic and semi-synthetic experiments.
+\item Theoretical quantities (oracle $x_n^\star$, $R_n$, safety margin) are computed through the same library functions used by the estimators, never hard-coded into outputs.
+\item Code release: \texttt{<anon>/dataloom} (placeholder URL for blind submission; the de-anonymised release will accompany the camera-ready version).
+\end{itemize}
+
+\subsection{NeurIPS reproducibility checklist}\label{ssec:impl-checklist}
+
+\begin{description}[leftmargin=*,style=nextline]
+\item[Theoretical claims.] All formal claims are stated with explicit assumptions and proved in Appendix~\ref{app:proofs} (linear estimator).
+\item[Experimental results.] Code is released at the placeholder URL above; random seeds are fixed and stored per replication; hyperparameters (pilot grid, fold count, debiasing rule, OLS power-law fit) are documented in \S\ref{ssec:impl-grid}.
+\item[Data.] Synthetic data-generating processes are fully specified in \Cref{sec:experiments} and Appendix~\ref{app:experiments}. Semi-synthetic experiments use public benchmarks (UCI Adult for the tabular benchmark; an IHDP-style causal benchmark for the ATE study); no proprietary or human-subjects data are used.
+\item[Compute.] Documented in \S\ref{ssec:impl-compute}. CPU-only, on the order of a few hours per full-profile experiment on a standard workstation.
+\item[Limitations.] Discussed in \Cref{sec:discussion}: scalar working model in main theory; full-profile semi-synthetic experiments do not yet show synthetic augmentation improving on the AIPW real-only baseline; learning-curve estimation can be unstable for small $x$.
+\item[Broader impacts.] Synthetic-data augmentation is widely deployed in industrial and scientific settings. The contribution of this paper is methodological: a sharper allocation rule and an inference-safe alternative. We expect these tools to support clearer accounting of what synthetic-data augmentation does and does not buy. We do not foresee misuse-specific risks beyond those already inherent in any synthetic-data pipeline.
+\end{description}
+
+
+\end{document}

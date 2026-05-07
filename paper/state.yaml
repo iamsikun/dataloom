@@ -1,0 +1,13 @@
+version: '2.0'
+active_target: conference
+targets:
+  neurips2026:
+    stage: drafting
+    initialized: 2026-05-03
+  conference:
+    stage: drafting
+    created: '2026-05-06'
+    venue: neurips
+    import_mode: review
+initialized: true
+imported_from: /Users/iamsikun/research/dataloom/paper/Bayesian_LLM_2/main9page.tex

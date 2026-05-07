@@ -1,0 +1,446 @@
+\label{app:proofs}
+
+This appendix collects full proofs of the formal statements in the main paper. Throughout, we work in the linear-allocation configuration of \Cref{sec:setup}: the index set $[n] = \{1, \dots, n\}$ is partitioned into the calibration block $C_x$ of size $x$ and the estimation block $E_x = [n] \setminus C_x$ of size $n - x$, and we write $V_R(x) = a / (n-x)$ for the variance of the real-only estimator $\hat\theta_R$ on $E_x$ and $B_n(x) = v_n + c\, x^{-2\beta}$ for the effective synthetic-error variance. Assumptions~\ref{asm:al-real},~\ref{asm:al-synth},~\ref{asm:pl}, and~\ref{asm:vn} are in force throughout. The notation matches the main paper, including the convention $B_n(\cdot)$ for the effective synthetic-error variance.
+
+\subsection{Auxiliary lemmas}\label{ssec:aux}
+
+We use two auxiliary lemmas repeatedly. Both follow from sample splitting and the working model and are standard.
+
+\begin{lemma}[Conditional and unconditional independence]
+\label{lem:ci} Fix $x$ and suppose the split $(C_x,E_x)$ is  independent of $\{X_i\}_{i=1}^n$. Assume that, conditionally on $\mathcal F_C$, the synthetic observations $Z_1,\ldots,Z_{m_n}$ are generated from an auxiliary random stream independent of $\{X_i:i\in E_x\}$. Then:
+\[
+\hat\theta_R(E_x)\perp\!\!\!\perp \hat\theta_S(x)\mid \mathcal F_C.
+\]
+Moreover,
+\[
+\hat\theta_R(E_x)\perp\!\!\!\perp (\theta_x,\hat\theta_S(x)).
+\]
+Consequently, $\hat\theta_R(E_x)$ is independent of both $\hat\theta_S(x)-\theta_x$ and $\hat\theta_S(x)-\theta^*$.
+\end{lemma}
+
+\begin{proof}
+Because the split is independent of the data and the observations are i.i.d., the estimation sample $\{X_i:i\in E_x\}$ is independent of $\mathcal F_C$. Conditional on $\mathcal F_C$, the calibrated distribution $P_x$ and the pseudo-true parameter $\theta_x=\theta(P_x)$ are fixed, and the synthetic sample $Z_1,\ldots,Z_{m_n}$ is generated using an auxiliary random stream independent of the estimation sample. Hence $\hat\theta_R(E_x)$ and $\hat\theta_S(x)$ are conditionally independent given $\mathcal F_C$.
+
+For the unconditional statement, $\hat\theta_R(E_x)$ is measurable with respect to the estimation sample, while $(\theta_x,\hat\theta_S(x))$ is measurable with respect to the calibration sample together with the auxiliary synthetic stream. These two sources of randomness are independent. Therefore
+\[
+\hat\theta_R(E_x)\perp\!\!\!\perp (\theta_x,\hat\theta_S(x)).
+\]
+The two displayed consequences follow because $\hat\theta_S(x)-\theta_x$ and $\hat\theta_S(x)-\theta^*$ are measurable functions of $(\theta_x,\hat\theta_S(x))$.
+\end{proof}
+
+\begin{lemma}[Synthetic-error decomposition]\label{lem:Bn}
+Under Assumption~\ref{asm:al-synth} and~\ref{asm:pl}, the synthetic estimator's mean-squared error around $\theta^\star$ admits the decomposition
+\[
+\mathbb{E}\bigl[(\hat\theta_S(x) - \theta^\star)^2\bigr]
+= v_n + b_2(x) + o(v_n) + o(b_2(x))
+= B_n(x) \{1 + o(1)\},
+\]
+where $b(x) := \theta_x - \theta^\star$ is the calibration-induced bias and $B_n(x) := v_n + c\,x^{-2\beta}$.
+\end{lemma}
+
+\begin{proof}[Proof of \Cref{lem:Bn}]
+Decompose $\hat\theta_S(x) - \theta^\star = (\hat\theta_S(x) - \theta_x) + b(x)$. By Assumption~\ref{asm:al-synth}, the first term has conditional mean zero and conditional variance $\sigma_S^2/m_n + o_p(1/m_n) = v_n\{1+o(1)\}$ (using $v_n = \sigma_S^2/m_n$ from the working model). Squaring and taking the unconditional expectation, the cross term vanishes (mean-zero conditional on the calibration data, applied with the tower property), and the squared bias term equals $b_2(x) = c x^{-2\beta}\{1+o(1)\}$ by Assumption~\ref{asm:pl}. Combining gives the displayed decomposition.
+\end{proof}
+
+
+
+\subsection{Proof of \texorpdfstring{\Cref{lem:mse-decomp}}{Lemma~\ref{lem:mse-decomp}} (Working MSE)}\label{proof:mse-decomp}
+
+\begin{proof}[Proof of \Cref{lem:mse-decomp}]
+Fix $x$ in the calibration range under consideration and write $\xi_R:=\hat\theta_R(E_x)-\theta^\star$ and $\xi_S:=\hat\theta_S(x)-\theta^\star$. Then $\hat\theta^L(\alpha,x)-\theta^\star=\alpha\xi_R+(1-\alpha)\xi_S$. By the unconditional independence statement in Lemma~\ref{lem:ci}, $\xi_R$ and $\xi_S$ are independent. Hence
+\[
+\mathbb{E}\left[\{\alpha\xi_R+(1-\alpha)\xi_S\}^2\right]
+=
+\alpha^2\mathbb{E}[\xi_R^2]
++
+(1-\alpha)^2\mathbb{E}[\xi_S^2]
++
+2\alpha(1-\alpha)\mathbb{E}[\xi_R]\mathbb{E}[\xi_S].
+\]
+By Assumption~\ref{asm:al-real}, the real estimator has a mean-zero influence function and a mean-zero remainder, so $\mathbb{E}[\xi_R]=0$. Thus the cross term vanishes exactly. Moreover, Assumption~\ref{asm:al-real} gives $\mathbb{E}[\xi_R^2] = V_R(x)\{1+o(1)\}$, uniformly over the calibration range. By \Cref{lem:Bn}, the synthetic-error decomposition gives $\mathbb{E}[\xi_S^2] = B_n(x)\{1+o(1)\}$, uniformly over the same range. Substituting these two expansions into the preceding display yields
+\[
+\mathbb{E}\bigl[(\hat\theta^L(\alpha,x)-\theta^\star)^2\bigr]
+=
+\alpha^2V_R(x)+(1-\alpha)^2B_n(x)+\mathcal R_n(\alpha,x),
+\]
+where $\mathcal R_n(\alpha,x)=\alpha^2o\{V_R(x)\}+(1-\alpha)^2o\{B_n(x)\}$. Since $\alpha\in[0,1]$, both $\alpha^2$ and $(1-\alpha)^2$ are bounded by one, and therefore $\mathcal R_n(\alpha,x)=o\{V_R(x)\}+o\{B_n(x)\}$ uniformly in $\alpha\in[0,1]$. This proves the claim.
+\end{proof}
+
+\subsection{Proof of \texorpdfstring{\Cref{prop:mix}}{Proposition~\ref{prop:mix}} (Optimal mixing)}\label{proof:mix}
+
+\begin{proof}[Proof of \Cref{prop:mix}]
+Define the leading-order MSE
+\[
+\overline{\mathrm{MSE}}_n(\alpha, x) := \alpha^2 V_R(x) + (1-\alpha)^2 B_n(x).
+\]
+This is a quadratic function of $\alpha$. Its second derivative with respect to $\alpha$ is $2[V_R(x) + B_n(x)] > 0$ since both terms are strictly positive, so $\overline{\mathrm{MSE}}_n(\cdot, x)$ is strictly convex. Setting the first derivative to zero gives
+\[
+\frac{\partial}{\partial \alpha}\, \overline{\mathrm{MSE}}_n(\alpha, x)
+= 2\alpha V_R(x) - 2(1-\alpha) B_n(x) = 0,
+\]
+which solves to $\alpha^\star(x) = B_n(x) / [V_R(x) + B_n(x)] \in (0,1)$ since both $V_R(x)$ and $B_n(x)$ are strictly positive and finite. This is the unique unconstrained minimizer; because it lies in the open interval $(0,1)$, it is also the unique minimizer over $[0,1]$.
+
+Substituting $\alpha = \alpha^\star(x)$ back into $\overline{\mathrm{MSE}}_n$ and simplifying,
+\[
+R_n(x) := \overline{\mathrm{MSE}}_n(\alpha^\star(x), x)
+= \frac{B_n(x)^2}{[V_R(x)+B_n(x)]^2} V_R(x)
++ \frac{V_R(x)^2}{[V_R(x)+B_n(x)]^2} B_n(x)
+= \frac{V_R(x) B_n(x)}{V_R(x) + B_n(x)},
+\]
+which is the harmonic-mean form. Multiplying numerator and denominator by $(n-x)$ and using $V_R(x) = a/(n-x)$ gives the second equality
+\[
+R_n(x) = \frac{a\, B_n(x)}{a + (n-x)\, B_n(x)}. \qedhere
+\]
+\end{proof}
+
+
+\subsection{Proof of \texorpdfstring{\Cref{prop:foc}}{Proposition~\ref{prop:foc}} (Exact FOC)}\label{proof:foc}
+
+To prove \Cref{prop:foc} we first record an intermediate result on the gradient of the profiled risk. This auxiliary lemma is local to the appendix.
+
+Define
+\begin{equation}\label{eq:Phi-def-app}
+\Phi(x) := B_n(x)^2\, x^{2\beta+1}, \qquad x > 0,
+\end{equation}
+and
+\begin{equation}\label{eq:H-def-app}
+H(x) := a\, B_n'(x) + B_n(x)^2.
+\end{equation}
+
+\begin{lemma}[Gradient of the profiled risk]\label{lem:gradient}
+For every $x \in (0, n)$,
+\begin{equation}\label{eq:Rn-prime-app}
+R_n'(x) = \frac{a\, H(x)}{[a + (n-x)\, B_n(x)]^2}
+       = \frac{a}{[a + (n-x) B_n(x)]^2}
+        \cdot \frac{\Phi(x) - 2\beta a c}{x^{2\beta+1}}.
+\end{equation}
+In particular, $\mathrm{sign}(R_n'(x)) = \mathrm{sign}(\Phi(x) - 2\beta a c)$.
+\end{lemma}
+\begin{proof}
+Write $R_n = u/w$ with $u(x) = a\, B_n(x)$ and $w(x) = a + (n-x)\, B_n(x)$. Differentiating,
+\[
+u'(x) = a\, B_n'(x), \qquad
+w'(x) = -B_n(x) + (n-x)\, B_n'(x).
+\]
+By the quotient rule, $R_n'(x) = (u'w - u w') / w^2$. Compute the numerator:
+\begin{align*}
+u' w - u w'
+&= a B_n' \bigl[a + (n-x) B_n\bigr]
+   - a B_n \bigl[-B_n + (n-x) B_n'\bigr] \\
+&= a^2 B_n' + a(n-x) B_n B_n' + a B_n^2 - a(n-x) B_n B_n' \\
+&= a^2 B_n' + a B_n^2 = a\, H(x).
+\end{align*}
+The two cross terms $\pm a(n-x) B_n B_n'$ cancel exactly; this algebraic cancellation is the reason the optimum does not depend on $n - x$ at first order.
+
+To rewrite in terms of $\Phi$, substitute $B_n'(x) = -2\beta c\, x^{-(2\beta+1)}$ (from $B_n(x) = v_n + c x^{-2\beta}$) and multiply $H(x)$ by $x^{2\beta+1}$:
+\[
+H(x)\, x^{2\beta+1}
+= -2\beta a c + B_n(x)^2 x^{2\beta+1}
+= \Phi(x) - 2\beta a c.
+\]
+Dividing by $x^{2\beta+1}$ and substituting into $R_n'(x) = a H(x)/w^2$ gives the second equality in \cref{eq:Rn-prime-app}. The denominator $[a + (n-x) B_n(x)]^2$ is strictly positive on $(0,n)$, and $a$ and $x^{2\beta+1}$ are strictly positive, so $R_n'(x)$ has the same sign as $\Phi(x) - 2\beta a c$.
+\end{proof}
+
+\begin{proof}[Proof of \Cref{prop:foc}]
+By \Cref{lem:gradient}, the interior critical points of $R_n$ on $(0,n)$ are exactly the points where $H(x) = 0$, equivalently $\Phi(x) = 2\beta a c$. Writing $\Phi(x) = (v_n + c x^{-2\beta})^2 x^{2\beta+1}$ and dividing both sides of $\Phi(x) = 2\beta a c$ by $x^{2\beta+1}$ gives the FOC
+\[
+(v_n + c x^{-2\beta})^2 = 2\beta a c\, x^{-(2\beta+1)},
+\]
+which is \cref{eq:foc} of the main paper. Multiplying by $x^{2\beta+1}$ and expanding the square,
+\[
+(v_n + c x^{-2\beta})^2 x^{2\beta+1}
+= v_n^2 x^{2\beta+1} + 2 v_n c x + c^2 x^{1-2\beta},
+\]
+so the polynomial form
+\[
+v_n^2 x^{2\beta+1} + 2 v_n c\, x + c^2 x^{1-2\beta} = 2\beta a c
+\]
+is equivalent. The multiplicity claim follows from the critical-point structure (see \Cref{proof:critical} below): for $\beta \le 1/2$, $\Phi$ is strictly increasing, so $\Phi(x) = 2\beta a c$ has at most one solution; for $\beta > 1/2$, $\Phi$ is strictly U-shaped with minimum at $x^\dagger$, so $\Phi(x) = 2\beta a c$ has at most two solutions, and the active interior root (the local minimum of $R_n$) is the larger.
+\end{proof}
+
+\subsection{Proof of \texorpdfstring{\Cref{prop:safe}}{Proposition~\ref{prop:safe}} (Safe-improvement)}\label{proof:safe}
+
+\begin{proof}[Proof of \Cref{prop:safe}]
+The all-real benchmark uses every real observation for direct estimation, incurring risk $a/n$. We compare $R_n(x)$ with $a/n$ via direct algebra. By \Cref{prop:mix},
+\[
+R_n(x) = \frac{a\, B_n(x)}{a + (n-x)\, B_n(x)}.
+\]
+Then $R_n(x) < a/n$ iff $a\, B_n(x) \cdot n < a \cdot [a + (n-x) B_n(x)]$, i.e.\ iff $n B_n(x) < a + (n-x) B_n(x)$, which simplifies after subtracting $(n-x) B_n(x)$ from both sides to
+\[
+x\, B_n(x) < a.
+\]
+The boundary case is $R_n(0) = a B_n(0)/(a + n B_n(0)) \le a/n$ trivially (with equality only in the degenerate $B_n(0) = \infty$ limit); the restriction to $x \in (0, n)$ is what makes the iff statement non-trivial. Substituting $B_n(x) = v_n + c x^{-2\beta}$ gives the equivalent form $x(v_n + c x^{-2\beta}) < a$, i.e.\ $v_n x + c x^{1-2\beta} < a$.
+\end{proof}
+
+\subsection{Proof of \texorpdfstring{\Cref{lem:critical}}{Lemma~\ref{lem:critical}} (Critical points)}\label{proof:critical}
+
+We first establish the shape of $\Phi$ as an auxiliary lemma, then conclude about critical points of $R_n$.
+
+\begin{lemma}[Shape of $\Phi$]\label{lem:shape}
+Under Assumption~\ref{asm:pl}, the function $\Phi(x) = (v_n + c x^{-2\beta})^2 x^{2\beta+1}$ on $(0,\infty)$ satisfies:
+\begin{enumerate}[label=\rm(\alph*),leftmargin=*]
+\item $\Phi'(x) = x^{2\beta} B_n(x) [(2\beta+1) v_n + (1-2\beta) c x^{-2\beta}]$.
+\item If $\beta \le 1/2$, then $\Phi'(x) > 0$ for all $x > 0$ (with $v_n > 0$): $\Phi$ is strictly increasing, with $\Phi(0^+) = c^2 \mathbf{1}\{\beta = 1/2\}$ and $\Phi(\infty) = +\infty$.
+\item If $\beta > 1/2$, then $\Phi$ is strictly U-shaped on $(0,\infty)$ with unique minimum at
+\begin{equation}\label{eq:xdagger-app}
+x^\dagger = \biggl(\frac{c(2\beta-1)}{(2\beta+1)v_n}\biggr)^{1/(2\beta)},
+\end{equation}
+and minimum value
+\begin{equation}\label{eq:Phidagger-app}
+\Phi^\dagger := \Phi(x^\dagger)
+= K(\beta)\, c^{(2\beta+1)/(2\beta)}\, v_n^{(2\beta-1)/(2\beta)},
+\quad
+K(\beta) := \frac{16 \beta^2}{(2\beta+1)^{(2\beta+1)/(2\beta)}\,
+                              (2\beta-1)^{(2\beta-1)/(2\beta)}}.
+\end{equation}
+$\Phi(0^+) = \Phi(\infty) = +\infty$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}[Proof of \Cref{lem:shape}]
+\textbf{(a)} By the product rule applied to $\Phi(x) = B_n(x)^2 \cdot x^{2\beta+1}$,
+\begin{align*}
+\Phi'(x)
+&= 2 B_n(x) B_n'(x) x^{2\beta+1} + B_n(x)^2 (2\beta+1) x^{2\beta} \\
+&= x^{2\beta} B_n(x)\, \bigl[2 B_n'(x)\, x + (2\beta+1) B_n(x)\bigr].
+\end{align*}
+Substituting $B_n'(x) = -2\beta c x^{-(2\beta+1)}$ and $B_n(x) = v_n + c x^{-2\beta}$,
+\begin{align*}
+2 B_n'(x) x + (2\beta+1) B_n(x)
+&= -4\beta c x^{-2\beta} + (2\beta+1) v_n + (2\beta+1) c x^{-2\beta} \\
+&= (2\beta+1) v_n + (1 - 2\beta) c x^{-2\beta}.
+\end{align*}
+This proves (a).
+
+\textbf{(b)} For $\beta \le 1/2$ we have $1 - 2\beta \ge 0$ and $v_n > 0$, so the bracket $(2\beta+1) v_n + (1-2\beta) c x^{-2\beta}$ is strictly positive on $(0,\infty)$. Combined with $x^{2\beta} > 0$ and $B_n(x) > 0$, this gives $\Phi'(x) > 0$ everywhere; $\Phi$ is strictly increasing. The endpoint behavior follows from expanding $B_n$. As $x \to 0^+$, $B_n(x) \sim c x^{-2\beta}$ so $\Phi(x) \sim c^2 x^{1 - 2\beta}$; for $\beta < 1/2$ this tends to $0$, while for $\beta = 1/2$, $\Phi(x) = (v_n x + c)^2 \to c^2$. As $x \to \infty$, $B_n(x) \to v_n$ so $\Phi(x) \sim v_n^2 x^{2\beta+1} \to \infty$ since $v_n > 0$.
+
+\textbf{(c)} For $\beta > 1/2$, $1 - 2\beta < 0$. The bracket $(2\beta+1) v_n + (1-2\beta) c x^{-2\beta}$ is a strictly increasing function of $x$ (since $c x^{-2\beta}$ is strictly decreasing in $x$ and is multiplied by a negative coefficient). It vanishes when $c x^{-2\beta} = (2\beta+1) v_n / (2\beta - 1)$, equivalently at $x = x^\dagger$ given by \cref{eq:xdagger-app}. For $x < x^\dagger$ the bracket is negative, so $\Phi' < 0$; for $x > x^\dagger$ the bracket is positive, so $\Phi' > 0$. Hence $\Phi$ is strictly decreasing on $(0, x^\dagger)$ and strictly increasing on $(x^\dagger, \infty)$, with unique minimum at $x^\dagger$.
+
+To compute $\Phi^\dagger = \Phi(x^\dagger)$, use $c x^{\dagger\, -2\beta} = (2\beta+1) v_n / (2\beta-1)$, so
+\[
+B_n(x^\dagger) = v_n + \frac{(2\beta+1) v_n}{2\beta - 1}
+= v_n \cdot \frac{4\beta}{2\beta - 1}.
+\]
+From \cref{eq:xdagger-app}, $x^{\dagger\, 2\beta+1} = [c(2\beta-1) / ((2\beta+1) v_n)]^{(2\beta+1)/(2\beta)}$. Multiplying,
+\begin{align*}
+\Phi^\dagger
+&= \Bigl(\tfrac{4\beta v_n}{2\beta - 1}\Bigr)^2
+   \cdot \Bigl(\tfrac{c(2\beta-1)}{(2\beta+1) v_n}\Bigr)^{(2\beta+1)/(2\beta)} \\
+&= \frac{16 \beta^2\, c^{(2\beta+1)/(2\beta)}}{(2\beta+1)^{(2\beta+1)/(2\beta)}
+   (2\beta-1)^{(2\beta-1)/(2\beta)}}
+   \cdot v_n^{(2\beta-1)/(2\beta)},
+\end{align*}
+where the $v_n$ exponent is $2 - (2\beta+1)/(2\beta) = (2\beta-1)/(2\beta)$ and the $(2\beta-1)$ exponent is $(2\beta+1)/(2\beta) - 2 = (1-2\beta)/(2\beta)$, contributing the factor $(2\beta-1)^{-(2\beta-1)/(2\beta)}$ as displayed. Endpoint behavior: as $x \to 0^+$, $\Phi(x) \sim c^2 x^{1-2\beta} \to +\infty$ since $1-2\beta < 0$; as $x \to \infty$, $\Phi(x) \sim v_n^2 x^{2\beta+1} \to +\infty$.
+\end{proof}
+
+\begin{proof}[Proof of \Cref{lem:critical}]
+By \Cref{lem:gradient}, the interior critical points of $R_n$ on $(0,n)$ are exactly the points where $\Phi(x) = 2\beta a c$, and $\mathrm{sign}(R_n'(x)) = \mathrm{sign}(\Phi(x) - 2\beta a c)$.
+
+\textbf{(i) $\beta \le 1/2$.} By \Cref{lem:shape}(b), $\Phi$ is strictly increasing, so the level set $\{x : \Phi(x) = 2\beta a c\}$ contains at most one element. When it exists, call it $x^\circ$. Then $\Phi - 2\beta a c < 0$ on $(0, x^\circ)$ and $> 0$ on $(x^\circ, \infty)$, so $R_n' < 0$ before $x^\circ$ and $R_n' > 0$ after; thus $x^\circ$ is a strict local minimum.
+
+For $\beta < 1/2$, \Cref{lem:shape}(b) gives $\Phi(0^+) = 0 < 2\beta a c < \Phi(\infty) = \infty$, so $x^\circ$ exists by continuity. For $\beta = 1/2$, $\Phi(0^+) = c^2$ and $\Phi(\infty) = \infty$, so $x^\circ$ exists iff $c^2 < 2\beta a c = a c$, equivalently $c < a$.
+
+\textbf{(ii) $\beta > 1/2$.} By \Cref{lem:shape}(c), $\Phi$ is U-shaped on $(0,\infty)$ with minimum value $\Phi^\dagger$ attained at $x^\dagger$.
+
+\emph{Case (a)} If $\Phi^\dagger > 2\beta a c$, then $\Phi(x) > \Phi^\dagger > 2\beta a c$ for all $x > 0$, so $R_n' > 0$ throughout $(0,n)$ and there is no interior critical point.
+
+\emph{Case (b)} If $\Phi^\dagger = 2\beta a c$, $\Phi - 2\beta a c \ge 0$ with equality only at $x^\dagger$, so $R_n' \ge 0$ with $R_n'(x^\dagger) = 0$; $R_n'$ does not change sign, so $x^\dagger$ is an inflection point but not a strict local extremum.
+
+\emph{Case (c)} If $\Phi^\dagger < 2\beta a c$: since $\Phi(0^+) = \Phi(\infty) = +\infty$ and $\Phi$ is continuous and strictly U-shaped with minimum $\Phi^\dagger < 2\beta a c$, the equation $\Phi(x) = 2\beta a c$ has exactly two solutions $x_1 \in (0, x^\dagger)$ and $x_2 \in (x^\dagger, \infty)$ by the intermediate value theorem applied to each strictly monotone branch. On $(0, x_1)$, $\Phi > 2\beta a c$ so $R_n' > 0$; on $(x_1, x_2)$, $\Phi < 2\beta a c$ so $R_n' < 0$; on $(x_2, \infty)$, $\Phi > 2\beta a c$ so $R_n' > 0$. Hence $x_1$ is a strict local maximum and $x_2$ a strict local minimum of $R_n$.
+
+The asymptotic claim follows from \cref{eq:Phidagger-app} and Assumption~\ref{asm:vn}: with $v_n = v_0 n^{-\rho}\{1 + o(1)\}$,
+\[
+\Phi^\dagger = K(\beta)\, c^{(2\beta+1)/(2\beta)}\, v_0^{(2\beta-1)/(2\beta)}\,
+n^{-\rho(2\beta-1)/(2\beta)}\{1 + o(1)\},
+\]
+which tends to $0$ when $\rho > 0$ and $\beta > 1/2$, since the exponent $-\rho(2\beta-1)/(2\beta)$ is strictly negative. Hence $\Phi^\dagger < 2\beta a c$ for all sufficiently large $n$, putting us in case (iic).
+\end{proof}
+
+\subsection{Proof of \texorpdfstring{Theorem~\ref{thm:phase}}{Theorem~\ref{thm:phase}} (Phase diagram)}\label{proof:phase}
+
+\begin{proof}[Proof of Theorem~\ref{thm:phase}]
+We analyze the polynomial form of the FOC,
+\begin{equation}\label{eq:foc-poly-app}
+v_n^2 x^{2\beta+1} + 2 c v_n\, x + c^2 x^{1-2\beta} = 2 \beta a c,
+\end{equation}
+in each regime, using \Cref{lem:critical} for existence and identification of the active root, and the global minimization $x_n^\star \in \argmin_{x \in [0,n]} R_n(x)$.
+
+\medskip
+\noindent\textbf{Regime I ($\rho = 0$, $v_n \to v_0 > 0$).} With $v_n \to v_0$, the FOC \cref{eq:foc-poly-app} reads $v_0^2 x^{2\beta+1} + 2 c v_0\, x + c^2 x^{1-2\beta} = 2\beta a c + o(1)$, which has no $n$-dependence in the leading coefficients. By \Cref{lem:critical}, any active interior root is determined by the constants $(a, c, v_0, \beta)$ alone and is therefore $O(1)$. Since the budget $n$ grows unboundedly, $x_n^\circ / n \to 0$. The candidates $\{0, x_n^\circ, n\}$ are evaluated by direct substitution into $R_n$; the global minimizer is one of $\{0, x_n^\circ\}$ since $R_n(n) = v_n + c n^{-2\beta} \to v_0$ does not vanish, while $R_n(0) = a/n \to 0$. Hence $x_n^\star \in \{0, x_n^\circ\}$ and in either case $\lambda_n^\star = x_n^\star / n \to 0$.
+
+\medskip
+\noindent\textbf{Regime II ($\beta < 1/2$, $\rho > 0$).} Now $v_n \to 0$. We claim $x_n^\circ = \Theta(1)$. With $x$ bounded, $v_n^2 x^{2\beta+1} = O(v_n^2)$ and $2 c v_n x = O(v_n)$, both $o(1)$, so \cref{eq:foc-poly-app} reduces to $c^2 x^{1-2\beta} = 2\beta a c + o(1)$. Solving, $x^{1-2\beta} = 2\beta a / c + o(1)$, so $x_n^\circ \to x_\infty := (2\beta a / c)^{1/(1-2\beta)}$. To rule out the alternative $x_n^\circ \to \infty$, observe that if so, then because $1 - 2\beta > 0$, the term $c^2 x^{1-2\beta} \to \infty$, contradicting \cref{eq:foc-poly-app} (whose right side is finite). So indeed $x_n^\circ = \Theta(1)$, hence $x_n^\circ / n \to 0$.
+
+For the rate: $V_R(x_n^\circ) = a/(n - x_n^\circ) \sim a/n$ since $x_n^\circ = O(1) \ll n$. And $B_n(x_n^\circ) = v_n + c x_n^{\circ\, -2\beta} \to c x_\infty^{-2\beta} > 0$ (the $v_n$ term vanishes). Substituting into the harmonic-mean form of $R_n$,
+\[
+R_n(x_n^\circ) = \frac{V_R B_n}{V_R + B_n}
+= V_R \cdot \frac{1}{1 + V_R / B_n}
+= V_R - \frac{V_R^2}{B_n} + O\bigl((V_R/B_n)^3\bigr),
+\]
+which yields $R_n(x_n^\circ) = a/n - (a/n)^2 / (c x_\infty^{-2\beta}) + o(n^{-2})$ as displayed in the theorem. Safe-improvement:
+\[
+x_\infty B_n(x_\infty) \to x_\infty \cdot c x_\infty^{-2\beta}
+= c x_\infty^{1 - 2\beta} = c \cdot (2\beta a / c) = 2\beta a < a
+\]
+since $\beta < 1/2$. Hence by \Cref{prop:safe}, $R_n(x_n^\circ) < a/n$ for $n$ large, and the global oracle is $x_n^\star = x_n^\circ\{1+o(1)\}$.
+
+\medskip
+\noindent\textbf{Regime III ($\beta > 1/2$, $0 < \rho < \beta + 1/2$).} By \Cref{lem:critical}(iic), the active interior root $x_n^\circ$ exists for all $n$ sufficiently large. We make and verify the conjecture that the bias term is asymptotically negligible relative to the synthetic-variance term at the root: $c x_n^{\circ\, -2\beta} \ll v_n$, hence $B_n(x_n^\circ) = v_n\{1 + o(1)\}$. Substituting this into the FOC \cref{eq:foc} gives
+\[
+v_n^2 = 2\beta a c\, x_n^{\circ\, -(2\beta+1)}\{1+o(1)\},
+\]
+which solves to
+\begin{align*}
+x_n^\circ
+&= \Bigl(\tfrac{2\beta a c}{v_n^2}\Bigr)^{1/(2\beta+1)}\{1+o(1)\} \\
+&= \Bigl(\tfrac{2\beta a c}{v_0^2}\Bigr)^{1/(2\beta+1)}
+   n^{2\rho/(2\beta+1)}\{1+o(1)\},
+\end{align*}
+using $v_n = v_0 n^{-\rho}\{1+o(1)\}$ to substitute. This is the displayed expression \cref{eq:xn-circ-III}.
+
+To verify the conjecture, compute the ratio of the two terms in $B_n$:
+\begin{align*}
+\frac{c x_n^{\circ\, -2\beta}}{v_n}
+&= c \cdot \Bigl[\tfrac{2\beta a c}{v_0^2}\Bigr]^{-2\beta/(2\beta+1)}
+   n^{-4\beta\rho/(2\beta+1)} \cdot \frac{1}{v_0 n^{-\rho}}\{1+o(1)\} \\
+&\asymp n^{-4\beta\rho/(2\beta+1) + \rho}
+= n^{\rho \cdot \bigl[1 - 4\beta/(2\beta+1)\bigr]}
+= n^{-\rho(2\beta-1)/(2\beta+1)},
+\end{align*}
+which tends to $0$ as $n \to \infty$ since $\beta > 1/2$ and $\rho > 0$. Hence $c x_n^{\circ\, -2\beta} = o(v_n)$, confirming the conjecture.
+
+Feasibility: $x_n^\circ / n \asymp n^{2\rho/(2\beta+1) - 1}$. The exponent $2\rho/(2\beta+1) - 1$ is strictly negative iff $\rho < \beta + 1/2$, which is the assumed range. Hence $x_n^\circ = o(n)$, so $\lambda_n^\circ \to 0$.
+
+Safe-improvement: $x_n^\circ B_n(x_n^\circ) \asymp n^{2\rho/(2\beta+1)} \cdot n^{-\rho} = n^{-\rho(2\beta-1)/(2\beta+1)} \to 0 < a$, so by \Cref{prop:safe}, $R_n(x_n^\circ) < a/n$ for $n$ large. We also have $R_n(x_n^\circ) < R_n(n)$ in this regime by Regime~IV's analysis below (strict inequality at the boundary). Hence $x_n^\star = x_n^\circ\{1+o(1)\}$.
+
+For the risk asymptotics: $V_R(x_n^\circ) = a/(n - x_n^\circ) = a/n\{1+o(1)\}$ since $x_n^\circ = o(n)$, and $B_n(x_n^\circ) = v_n\{1+o(1)\}$. The harmonic-mean formula
+\[
+R_n(x_n^\star) = \frac{V_R B_n}{V_R + B_n}\{1+o(1)\}
+              = \frac{(a/n)\, v_n}{a/n + v_n}\{1+o(1)\}
+\]
+yields the three subcases by direct substitution: if $\rho < 1$, $v_n \gg a/n$ so the denominator is dominated by $v_n$ and $R_n \sim a/n$; if $\rho = 1$, both terms are of the same order $1/n$ and $R_n \sim a v_0 / [(a + v_0) n]$; if $\rho > 1$, $v_n \ll a/n$ so the denominator is dominated by $a/n$ and $R_n \sim v_n = v_0/n^\rho$.
+
+\medskip
+\noindent\textbf{Regime IV ($\beta > 1/2$, $\rho > \beta + 1/2$).} The Regime-III asymptotic formula gives $x_n^\circ \asymp n^{2\rho/(2\beta+1)}$. Here $2\rho/(2\beta+1) > 1$, so $x_n^\circ > n$ for $n$ large and the interior root is infeasible. We compare the boundary candidates $R_n(0) = a/n$ and $R_n(n) = v_n + c n^{-2\beta}$. With $\rho > \beta + 1/2 > 1$ and $2\beta > 1$, $v_n = O(n^{-\rho}) = o(n^{-1})$ and $c n^{-2\beta} = o(n^{-1})$, so $R_n(n) = o(n^{-1}) < a/n$ eventually. Hence the global oracle is at the right boundary: $x_n^\star = n\{1+o(1)\}$, $\lambda_n^\star \to 1$, and the risk rate $R_n(x_n^\star) = v_n + c n^{-2\beta} = o(n^{-1})$ beats the all-real rate.
+
+\medskip
+\noindent\textbf{Regime V ($\beta = 1/2$).} With $\beta = 1/2$, the FOC \cref{eq:foc} becomes $(v_n + c x^{-1})^2 = a c x^{-2}$, i.e., $(v_n x + c)^2 = a c$ after multiplying through by $x^2$. Taking the positive square root (the negative root $v_n x + c = -\sqrt{a c}$ gives $x < 0$, infeasible), $v_n x + c = \sqrt{a c}$, so
+\[
+x_n^\circ = \frac{\sqrt{a c} - c}{v_n},
+\]
+which is positive iff $\sqrt{a c} > c$, equivalently $a > c$. The asymptotic order follows from $v_n = v_0 n^{-\rho}\{1+o(1)\}$, giving $x_n^\circ = ((\sqrt{ac} - c)/v_0)\, n^\rho\{1+o(1)\}$.
+
+The boundary regime depends on $\rho$:
+\begin{itemize}[leftmargin=*]
+\item If $\rho < 1$, $x_n^\circ = o(n)$, so $\lambda_n^\circ \to 0$ and $R_n(x_n^\star) \sim a/n$ with strict finite-sample improvement (the shrinkage gain $-(a/n)^2/B_n(x_n^\circ)$ is strictly negative).
+\item If $\rho = 1$, $\lambda_n^\circ \to (\sqrt{a c} - c)/v_0 \in (0,1)$ provided $\sqrt{a c} - c < v_0$, with $R_n(x_n^\star) \asymp n^{-1}$.
+\item If $\rho > 1$, $x_n^\circ$ exceeds $n$ asymptotically; we compare boundaries. $R_n(n) = v_n + c/n \sim c/n$ since $\rho > 1$ makes $v_n = o(1/n)$. This beats $R_n(0) = a/n$ iff $c < a$, which holds by hypothesis. Hence $\lambda_n^\star \to 1$ and $R_n(x_n^\star) = v_n + c/n = O(\max(n^{-\rho}, n^{-1}))$.
+\end{itemize}
+
+If instead $a \le c$, then $\sqrt{ac} \le c$, so the formula gives $x_n^\circ \le 0$, so there is no interior root. By \Cref{prop:safe}, the safe-improvement condition at $x > 0$ becomes $v_n x + c < a$; since $c \ge a$ this fails for any $x \ge 0$, so the boundary $x_n^\star = 0$ dominates. This concludes Regime V and the proof.
+\end{proof}
+
+\subsection{Proof of \texorpdfstring{\Cref{prop:plateau}}{Proposition~\ref{prop:plateau}} (Plateau bias)}\label{proof:plateau}
+
+\begin{proof}[Proof of \Cref{prop:plateau}]
+Replace Assumption~\ref{asm:pl} by $b_2(x) = b_\infty^2 + c x^{-2\beta}\{1+o(1)\}$ with $b_\infty^2 > 0$ and $\beta > 0$, and keep Assumption~\ref{asm:vn} with $\rho \ge 0$. Now $B_n(x) = v_n + b_\infty^2 + c x^{-2\beta} \ge b_\infty^2 > 0$ for all $x > 0$, so $B_n$ is bounded below by a strictly positive constant uniformly in $x$ and $n$.
+
+The FOC $B_n(x)^2 = 2\beta a c\, x^{-(2\beta+1)}$ from \Cref{prop:foc} implies in particular
+\[
+b_\infty^4 \le B_n(x)^2 = 2\beta a c\, x^{-(2\beta+1)},
+\]
+which yields the explicit upper bound $x^{2\beta+1} \le 2\beta a c / b_\infty^4$, equivalently
+\[
+x_n^\circ \le \Bigl(\tfrac{2\beta a c}{b_\infty^4}\Bigr)^{1/(2\beta+1)} = O(1).
+\]
+This is \cref{eq:xn-plateau}, and it shows $x_n^\circ = O(1)$ regardless of $\beta, \rho$. Consequently $\lambda_n^\circ = x_n^\circ / n \to 0$ for any $\beta > 0$ and $\rho \ge 0$.
+
+For the risk: $V_R(x_n^\circ) = a/(n - x_n^\circ) \sim a/n$, since $x_n^\circ$ is bounded. And $B_n(x_n^\circ) \ge b_\infty^2 > 0$ is bounded away from zero. Hence $V_R \ll B_n$ asymptotically. As in Regime II,
+\[
+R_n(x_n^\circ) = V_R - V_R^2 / B_n + o(V_R^2 / B_n)
+              = \frac{a}{n} - \frac{(a/n)^2}{B_n(x_n^\circ)} + o(n^{-2}),
+\]
+so $R_n(x_n^\star) = a/n\{1+o(1)\}$, giving only finite-sample shrinkage gain, no first-order rate improvement. The shrinkage is strictly positive iff $R_n(x_n^\circ) < a/n$, equivalent by \Cref{prop:safe} to $x_n^\circ B_n(x_n^\circ) < a$, which becomes $x_n^\circ b_\infty^2 < a$ at leading order (since $v_n$ and $c x_n^{\circ\, -2\beta}$ are $o(1)$ relative to $b_\infty^2$ when $b_\infty^2 > 0$ and $x_n^\circ$ is bounded).
+\end{proof}
+
+\subsection{Proof of \texorpdfstring{Theorem~\ref{thm:adaptive}}{Theorem~\ref{thm:adaptive}} (Adaptive oracle inequality)}\label{proof:adaptive}
+
+\begin{proof}[Proof of Theorem~\ref{thm:adaptive}]
+Let $\mathcal{G}_n^+ = \mathcal{G}_n \cup \{0, n\}$ and recall the oracle and adaptive choices
+\[
+x_n^\star := \argmin_{x \in \mathcal{G}_n^+} R_n(x), \qquad
+\hat x_n := \argmin_{x \in \mathcal{G}_n^+} \widehat R_n(x),
+\]
+ties broken arbitrarily. Fix $\delta > 0$ arbitrary. On the event $\{\Delta_n \le \delta\}$, the uniform-relative-consistency bound $\sup_{x \in \mathcal{G}_n^+} |\widehat R_n(x)/R_n(x) - 1| \le \delta$ implies the two-sided sandwich
+\begin{equation}\label{eq:sandwich-app}
+(1 - \delta)\, R_n(x) \;\le\; \widehat R_n(x) \;\le\; (1 + \delta)\, R_n(x)
+\qquad \text{for every } x \in \mathcal{G}_n^+.
+\end{equation}
+By definition of $\hat x_n$ as the empirical minimizer, $\widehat R_n(\hat x_n) \le \widehat R_n(x_n^\star)$. Chaining \cref{eq:sandwich-app} applied at $x = \hat x_n$ on the left and $x = x_n^\star$ on the right with this minimization,
+\[
+(1 - \delta)\, R_n(\hat x_n)
+\;\le\; \widehat R_n(\hat x_n)
+\;\le\; \widehat R_n(x_n^\star)
+\;\le\; (1 + \delta)\, R_n(x_n^\star).
+\]
+Dividing by $(1 - \delta) R_n(x_n^\star)$ (both factors are strictly positive),
+\[
+\frac{R_n(\hat x_n)}{R_n(x_n^\star)} \;\le\; \frac{1 + \delta}{1 - \delta}.
+\]
+Conversely, $R_n(\hat x_n)/R_n(x_n^\star) \ge 1$ trivially since $x_n^\star$ is the oracle minimizer over the same grid. Hence on $\{\Delta_n \le \delta\}$,
+\[
+1 \;\le\; \frac{R_n(\hat x_n)}{R_n(x_n^\star)} \;\le\; \frac{1 + \delta}{1 - \delta}.
+\]
+Since $\Delta_n \stackrel{p}{\to} 0$ by hypothesis, for any fixed $\eta > 0$ we can choose $\delta$ small so that $(1+\delta)/(1-\delta) < 1 + \eta$ and conclude
+\[
+\Prob\Bigl(\bigl|R_n(\hat x_n)/R_n(x_n^\star) - 1\bigr| > \eta\Bigr)
+\;\le\; \Prob(\Delta_n > \delta) \to 0,
+\]
+which is the conclusion of Theorem~\ref{thm:adaptive}. The continuous-oracle claim follows by combining $R_n(x_n^\star) = (1 + o(1)) \inf_{[0,n]} R_n$ (the grid near-optimality hypothesis) with the previous display and Slutsky.
+\end{proof}
+
+\subsection{Proof of \texorpdfstring{Proposition~\ref{prop:clt}}{Proposition~\ref{prop:clt}} (Centered CLT)}\label{proof:clt}
+
+\begin{proof}[Proof of Proposition~\ref{prop:clt}]
+By Lemma~\ref{lem:ci}(i) and Assumption~\ref{asm:al-real} and~\ref{asm:al-synth}, conditionally on $\mathcal{F}_C$ (the calibration $\sigma$-field) the linear estimator decomposes as
+\begin{align*}
+\hat\theta^{\mathrm{L}}(\alpha^\star, x) - \theta^\star
+&= \alpha^\star \bigl(\hat\theta_R - \theta^\star\bigr)
+   + (1-\alpha^\star) \bigl(\hat\theta_S - \theta_x\bigr)
+   + (1-\alpha^\star)\, \Delta(x),
+\end{align*}
+where $\Delta(x) := \theta_x - \theta^\star$ is the calibration-induced bias, which is $\mathcal{F}_C$-measurable. The first two summands are independent zero-mean martingale-difference averages with conditional variances $\alpha^{\star\, 2} V_R(x)\{1+o(1)\}$ and $(1-\alpha^\star)^2 v_n\{1+o(1)\}$ respectively (using Assumption~\ref{asm:al-real} and~\ref{asm:al-synth} and the synthetic-error decomposition). They are conditionally independent because $\hat\theta_R$ depends only on $E_x$ and $\hat\theta_S$ depends only on the synthetic draws given $\mathcal{F}_C$ (with $E_x$ and the synthetic draws mutually independent).
+
+Define $\Omega_n(x) := \alpha^{\star\, 2} V_R(x) + (1-\alpha^\star)^2 v_n$ as the stochastic-variance contribution. Subtracting the bias from both sides and dividing by $\sqrt{\Omega_n(x_n^\star)}$,
+\[
+\frac{\hat\theta^{\mathrm{L}} - \theta^\star - (1-\alpha^\star)\Delta(x_n^\star)}
+{\sqrt{\Omega_n(x_n^\star)}}
+= \frac{\alpha^\star (\hat\theta_R - \theta^\star) + (1-\alpha^\star)(\hat\theta_S - \theta_{x_n^\star})}
+{\sqrt{\Omega_n(x_n^\star)}}.
+\]
+The right side is a sum of two independent triangular arrays with combined conditional variance equal to $1$. The Lindeberg-Feller CLT applied conditionally on $\mathcal{F}_C$ gives convergence to $N(0,1)$ provided the Lindeberg condition holds for $\psi$ and $\phi_x$ (the influence functions of $\hat\theta_R$ and $\hat\theta_S$), which is assumed. Convergence holds unconditionally as well since the limiting distribution is non-random, allowing exchange of conditional and unconditional limits via the dominated convergence theorem applied to characteristic functions.
+
+Replacing the oracle weights and oracle allocation by their adaptive estimates $(\hat\alpha, \hat x_n)$ from Theorem~\ref{thm:adaptive} preserves the CLT under the same regularity: by Theorem~\ref{thm:adaptive} and the continuity of $\alpha^\star(\cdot)$, $\hat\alpha = \alpha^\star(x_n^\star)\{1+o_p(1)\}$ and $\Omega_n(\hat x_n)/\Omega_n(x_n^\star) \stackrel{p}{\to} 1$, so Slutsky's theorem yields the same Gaussian limit.
+\end{proof}
+
+\subsection{Proof of \texorpdfstring{Corollary~\ref{cor:wald}}{Corollary~\ref{cor:wald}} (Wald inference)}\label{proof:wald}
+
+\begin{proof}[Proof of Corollary~\ref{cor:wald}]
+A two-sided Wald interval of width $z_{1-\alpha/2}\sqrt{\Omega_n(x_n^\star)}$ centered at $\hat\theta^{\mathrm{L}}$ has asymptotic coverage $1-\alpha$ for $\theta^\star$ if and only if the standardized residual $(\hat\theta^{\mathrm{L}} - \theta^\star)/\sqrt{\Omega_n(x_n^\star)}$ converges to $N(0,1)$. By Proposition~\ref{prop:clt}, the standardized residual \emph{centered at $\theta^\star + (1-\alpha^\star)\Delta(x_n^\star)$} converges to $N(0,1)$. Removing the centering shift gives
+\[
+\frac{\hat\theta^{\mathrm{L}} - \theta^\star}{\sqrt{\Omega_n(x_n^\star)}}
+= \frac{\hat\theta^{\mathrm{L}} - \theta^\star - (1-\alpha^\star)\Delta(x_n^\star)}{\sqrt{\Omega_n(x_n^\star)}}
++ \frac{(1-\alpha^\star)\Delta(x_n^\star)}{\sqrt{\Omega_n(x_n^\star)}}.
+\]
+The first summand converges to $N(0,1)$. The second is a deterministic shift in the limit. The standardized residual is asymptotically standard normal, and the Wald interval has correct asymptotic coverage, if and only if this second term tends to zero in probability:
+\begin{equation}\label{eq:wald-cond-app}
+(1 - \alpha^\star(x_n^\star))\, \Delta(x_n^\star) = o_p\bigl(\sqrt{\Omega_n(x_n^\star)}\bigr).
+\end{equation}
+This proves the iff statement. Now examine \cref{eq:wald-cond-app} in two specific regimes.
+
+\emph{Regime III with $\rho = 1$, $\beta > 1/2$.} By Theorem~\ref{thm:phase} (Regime III with $\rho = 1$), $x_n^\star \asymp n^{2/(2\beta+1)}$ and $R_n(x_n^\star) \asymp n^{-1}$, so $\Omega_n(x_n^\star) \asymp n^{-1}$. The calibration bias satisfies $\mathbb{E}[\Delta(x_n^\star)^2] = b^2(x_n^\star) \asymp x_n^{\star\, -2\beta} \asymp n^{-4\beta/(2\beta+1)}$. Since $4\beta/(2\beta+1) > 1$ iff $\beta > 1/2$, we have $\Delta(x_n^\star) = O_p(n^{-2\beta/(2\beta+1)}) = o(n^{-1/2}) = o(\sqrt{\Omega_n(x_n^\star)})$. Multiplying by $1 - \alpha^\star = O(1)$ preserves the order, so \cref{eq:wald-cond-app} holds.
+
+\emph{Regime V with $\rho = 1$, $a > c$, $\beta = 1/2$.} In this regime $x_n^\star \asymp n$ but $\lambda_n^\star \to (\sqrt{ac}-c)/v_0 \in (0,1)$, so $\Omega_n(x_n^\star) \asymp n^{-1}$. The bias satisfies $b^2(x_n^\star) \asymp x_n^{\star\, -1} \asymp n^{-1}$, so $\Delta(x_n^\star)$ is the same order as $\sqrt{\Omega_n(x_n^\star)}$. Generically $1 - \alpha^\star$ is bounded away from zero, so \cref{eq:wald-cond-app} fails: $(1-\alpha^\star)\Delta(x_n^\star)$ is $O_p(\sqrt{\Omega_n(x_n^\star)})$, not $o_p$. Hence the Wald interval suffers a non-vanishing standardized bias and undercovers in the limit.
+\end{proof}
+
+% POLISHED

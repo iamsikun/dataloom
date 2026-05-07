@@ -1,0 +1,15 @@
+\label{app:plateau}
+
+\emph{This subsection was moved from the main paper (formerly Section~4.4) to fit the 9-page content limit; it is reproduced here verbatim.}
+
+The phase diagram assumes the synthetic squared bias drives to zero with calibration. Foundation-model-style generators may instead leave a non-vanishing bias floor, such as alignment errors that more calibration data cannot remove. The next result records that, once such a floor is present, the regime structure collapses.
+
+\begin{proposition}[Plateau-bias regime]\label{prop:plateau}
+Replace Assumption~\ref{asm:pl} by $b_2(x)=b_\infty^2+cx^{-2\beta}\{1+o(1)\}$ with $b_\infty^2>0$ and $\beta>0$, and suppose Assumption~\ref{asm:vn} holds with $\rho\ge 0$. Then for $n$ sufficiently large the active interior root satisfies
+\begin{equation}\label{eq:xn-plateau}
+  x_n^\circ\;\le\;\Bigl(\tfrac{2\beta a c}{b_\infty^4}\Bigr)^{1/(2\beta+1)}\;=\;O(1),
+\end{equation}
+so $\lambda_n^\circ\to 0$ for every $\beta>0$ and every $\rho\ge 0$. The optimal risk satisfies $R_n(x_n^\star)=a/n\{1+o(1)\}$: synthetic augmentation buys at most a finite-sample shrinkage gain and no first-order rate improvement. The shrinkage is positive iff $x_n^\circ\,b_\infty^2<a$.
+\end{proposition}
+
+In words, plateau bias caps calibration at a constant budget regardless of how fast the bias \emph{would} have decayed before reaching the floor. Operationally, the generator is useful only down to its noise floor; beyond that point, further calibration is wasted.

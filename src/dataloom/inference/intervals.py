@@ -15,7 +15,14 @@ from ..adaptive.bias_curve import (
     default_pilot_grid,
     estimate_bias_curve,
 )
-from ..adaptive.parametric import _resolve_n_v, _run_at_with_plugins
+from ..adaptive.parametric import (
+    _bias_reference,
+    _candidate_grid,
+    _fit_allows_synthetic,
+    _min_positive,
+    _pilot_repeats,
+    _resolve_n_v,
+)
 from ..estimators.api import EstimatorResult, register, split_indices
 from ..oracle import oracle_grid
 
@@ -60,16 +67,25 @@ def _adaptive_select(X, synth_fn, n, rng, truth_params, estimand, config):
     fit = estimate_bias_curve(
         n=n, n_v=n_v, X=X, synth_fn=synth_fn, rng=rng, estimand=estimand,
         pilot_grid=default_pilot_grid(n), m=m,
+        pilot_repeats=_pilot_repeats(config),
+        min_positive=_min_positive(config),
+        reference=_bias_reference(config),
     )
     n_eff = n - n_v
+    if not _fit_allows_synthetic(fit, config):
+        return None, n_eff, 0, None, fit.a_hat / n, 1.0, estimand(X), fit
     res = oracle_grid(n=n_eff, a=fit.a_hat, v_n=fit.v_hat,
-                      c=fit.c_hat, beta=fit.beta_hat)
+                      c=fit.c_hat, beta=fit.beta_hat,
+                      grid=_candidate_grid(n_eff, fit, config))
     x_hat = res.x_star
     if x_hat <= 0:
         # Real-only fallback: use whole X with plug-in variance.
         return None, n_eff, 0, None, fit.a_hat / n, 1.0, estimand(X), fit
     if x_hat >= n_eff:
-        x_hat = n_eff - 1
+        Z = synth_fn(int(n_eff), rng)
+        theta_hat = estimand(Z)
+        b_hat = float(fit.v_hat + fit.c_hat * (n_eff ** (-2.0 * fit.beta_hat)))
+        return fit, n_eff, n_eff, b_hat, float("inf"), 0.0, theta_hat, fit
     cal_idx, est_idx = split_indices(n_eff, x_hat, rng)
     Z = synth_fn(int(x_hat), rng)
     theta_R = estimand(X[: n_eff][est_idx])
@@ -86,6 +102,17 @@ def _omega_n(alpha: float, a_hat: float, n_eff: int, x_hat: int,
     """Plug-in variance per the locked-in convention."""
     n_e = max(n_eff - x_hat, 1)
     return alpha ** 2 * (a_hat / n_e) + (1.0 - alpha) ** 2 * v_hat
+
+
+def _profiled_risk(v: float, b: float) -> float:
+    return b if not np.isfinite(v) else v * b / (v + b)
+
+
+def _resolve_validation_n_v(n: int, config: dict[str, Any] | None) -> int:
+    cfg = config or {}
+    if "n_v" in cfg:
+        return max(1, min(int(cfg["n_v"]), n - 2))
+    return max(1, min(int(np.floor(0.2 * n)), n // 4))
 
 
 def ci_gn_naive(
@@ -119,7 +146,7 @@ def ci_gn_naive(
         B_eff_selected=b_hat, V_R_selected=v_R,
         a_hat=fit.a_hat, v_hat=fit.v_hat,
         beta_hat=fit.beta_hat, c_hat=fit.c_hat,
-        estimated_risk_selected=v_R * b_hat / (v_R + b_hat),
+        estimated_risk_selected=_profiled_risk(v_R, b_hat),
         safe_pass=bool(x_hat * b_hat < fit.a_hat),
         safe_margin=fit.a_hat - x_hat * b_hat,
         fallback_used=False,
@@ -165,7 +192,7 @@ def ci_gn_bias_aware(
         B_eff_selected=b_hat, V_R_selected=v_R,
         a_hat=fit.a_hat, v_hat=fit.v_hat,
         beta_hat=fit.beta_hat, c_hat=fit.c_hat,
-        estimated_risk_selected=v_R * b_hat / (v_R + b_hat),
+        estimated_risk_selected=_profiled_risk(v_R, b_hat),
         ci_lower=theta_hat - (Z975 * se + bias_pad),
         ci_upper=theta_hat + (Z975 * se + bias_pad),
         fallback_used=False,
@@ -246,7 +273,7 @@ def ci_gn_undersmoothed(
         B_eff_selected=b, V_R_selected=v,
         a_hat=fit.a_hat, v_hat=fit.v_hat,
         beta_hat=fit.beta_hat, c_hat=fit.c_hat,
-        estimated_risk_selected=v * b / (v + b),
+        estimated_risk_selected=_profiled_risk(v, b),
         ci_lower=theta_hat - Z975 * se, ci_upper=theta_hat + Z975 * se,
         fallback_used=False,
     )
@@ -267,7 +294,7 @@ def ci_validation_debiased(
     config: dict[str, Any] | None = None,
 ) -> EstimatorResult:
     """Held-out validation debiasing (§2.10 / §7.3.E)."""
-    n_v = _resolve_n_v(n, config)
+    n_v = _resolve_validation_n_v(n, config)
     m = truth_params["m"]
     n_eff = n - n_v
     val = X[n - n_v :]
@@ -276,9 +303,23 @@ def ci_validation_debiased(
     fit = estimate_bias_curve(
         n=n, n_v=n_v, X=X, synth_fn=synth_fn, rng=rng, estimand=estimand,
         pilot_grid=default_pilot_grid(n), m=m,
+        pilot_repeats=_pilot_repeats(config),
+        min_positive=_min_positive(config),
+        reference="validation",
     )
+    if not _fit_allows_synthetic(fit, config):
+        theta_hat = estimand(X)
+        se = (fit.a_hat / n) ** 0.5
+        return EstimatorResult(
+            theta_hat=theta_hat, x_selected=0, alpha_selected=1.0,
+            V_R_selected=fit.a_hat / n, a_hat=fit.a_hat, v_hat=fit.v_hat,
+            beta_hat=fit.beta_hat, c_hat=fit.c_hat,
+            ci_lower=theta_hat - Z975 * se, ci_upper=theta_hat + Z975 * se,
+            fallback_used=True,
+        )
     res = oracle_grid(n=n_eff, a=fit.a_hat, v_n=fit.v_hat,
-                      c=fit.c_hat, beta=fit.beta_hat)
+                      c=fit.c_hat, beta=fit.beta_hat,
+                      grid=_candidate_grid(n_eff, fit, config))
     x_hat = res.x_star
     if x_hat <= 0:
         theta_hat = estimand(X)
@@ -291,10 +332,11 @@ def ci_validation_debiased(
             fallback_used=True,
         )
     if x_hat >= n_eff:
-        x_hat = n_eff - 1
-
-    cal_idx, est_idx = split_indices(n_eff, x_hat, rng)
-    theta_R = estimand(rest[est_idx])
+        x_hat = n_eff
+        theta_R = 0.0
+    else:
+        cal_idx, est_idx = split_indices(n_eff, x_hat, rng)
+        theta_R = estimand(rest[est_idx])
     Z = synth_fn(int(x_hat), rng)
     theta_S = estimand(Z)
 
@@ -307,8 +349,10 @@ def ci_validation_debiased(
 
     # Combine with the same alpha.
     b_hat = float(fit.v_hat + fit.c_hat * (x_hat ** (-2.0 * fit.beta_hat)))
-    v_R = float(fit.a_hat / max(n_eff - x_hat, 1))
+    v_R = float("inf") if x_hat >= n_eff else float(fit.a_hat / max(n_eff - x_hat, 1))
     alpha = b_hat / (v_R + b_hat)
+    if not np.isfinite(v_R):
+        alpha = 0.0
     theta_hat = alpha * theta_R + (1.0 - alpha) * theta_S_tilde
 
     # Variance: alpha² Var(theta_R) + (1-alpha)² (Var(theta_S) + Var(bias_hat)).
@@ -321,7 +365,7 @@ def ci_validation_debiased(
         B_eff_selected=b_hat, V_R_selected=v_R,
         a_hat=fit.a_hat, v_hat=fit.v_hat,
         beta_hat=fit.beta_hat, c_hat=fit.c_hat,
-        estimated_risk_selected=v_R * b_hat / (v_R + b_hat),
+        estimated_risk_selected=_profiled_risk(v_R, b_hat),
         ci_lower=theta_hat - Z975 * se,
         ci_upper=theta_hat + Z975 * se,
         fallback_used=False,

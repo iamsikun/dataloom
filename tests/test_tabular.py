@@ -34,6 +34,15 @@ def test_generator_fit_sample_roundtrip(name):
         assert c in Z.columns
 
 
+def test_gaussian_copula_handles_tiny_calibration_sample():
+    df = load_adult().head(1).select_dtypes(include="number")
+    gen = get_generator("gaussian_copula").fit(df)
+    rng = np.random.default_rng(0)
+    Z = gen.sample(10, rng)
+    assert len(Z) == 10
+    assert set(df.columns).issubset(Z.columns)
+
+
 def test_estimand_income_mean_well_defined():
     df = load_adult()
     val = estimand_income_mean(df)

@@ -1,0 +1,35 @@
+\label{sec:experiments}
+
+The experiments answer three questions. First, does the corrected oracle obey the phase diagram? Second, can an adaptive estimator recover useful allocations from finite pilot data? Third, when does the MSE-optimal estimator need validation debiasing for inference? Experiments~1, 2, and~4 use full synthetic Monte~Carlo sweeps; Experiments~1 and~2 together use roughly $10^7$ replications, and Experiment~4 uses $280{,}000$ replications. The multichannel, tabular, and causal benchmarks, together with complete result tables for all experiments, are reported in Appendix~\ref{app:experiments}.
+
+\subsection{Phase-diagram validation}\label{ssec:exp1}
+
+\paragraph{Setup.} Real observations follow $X_i=\theta^\star+\epsilon_i$ with $\epsilon_i\sim N(0,a)$. After calibration size $x$, synthetic observations follow $Z_j(x)=\theta^\star+B_0x^{-\beta}+u_j$ with $u_j\sim N(0,\sigma_S^2)$ and $m_n=\lceil \kappa n^\rho\rceil$. The main grid sets $\theta^\star=0$ and $a=B_0=c=\sigma_S^2=\kappa=1$, then sweeps $n\in\{100,\ldots,20{,}000\}$, seven values of $\beta\in[0.25,2]$, and six values of $\rho\in[0,3]$.
+
+\paragraph{Main evidence.} The oracle results support the paper's main claim. In the headline cell ($\beta=1$, $\rho=1$, $n=20{,}000$), the corrected oracle has MSE ratio $0.535$ relative to all-real estimation. The old fixed-share rule has ratio $0.779$, and synthetic-only full calibration has ratio $1.015$. Thus the corrected allocation roughly doubles the MSE reduction obtained by the fixed-share rule, while synthetic-only use is slightly harmful. \Cref{fig:mse_compare} shows the same ordering across the grid. The scaling check in \Cref{fig:scaling} also matches the theory: among the interior fast-learning cells, the four disagreements are all upward deviations near the slow-learning boundary, consistent with finite-grid pre-asymptotics rather than a failure of the first-order condition. Full slope estimates are in \Cref{tab:scaling}.
+
+\subsection{Adaptive feasibility}\label{ssec:exp2}
+
+Experiment~2 uses the same Gaussian DGP on a smaller grid and estimates the bias curve from the pilot grid $\mathcal{G}_{\mathrm{pilot}}=\{5,10,20,40,80,160,320,640\}\cap[1,n/2]$. The adaptive story is more cautious than the oracle story. In the headline cell ($\beta=1$, $\rho=1$, $n=10{,}000$), the oracle MSE ratio is $0.522$, while \texttt{corrected\_adaptive\_gn} reaches $0.867$ and \texttt{safe\_corrected\_adaptive\_gn} reaches $0.908$. The selected calibration size is close to oracle in that cell ($563$ versus $573$), but the MSE gap shows that allocation tracking is not the same as oracle-equivalent point estimation.
+
+Across the $60$ non-trivial cells with $\rho>0$, \texttt{corrected\_adaptive\_gn} is harmful in $21$ cells, with median MSE ratio $0.986$ and maximum ratio $1.460$. This is not evidence that the adaptive method has reached its asymptotic oracle regime at the simulated sample sizes. It is evidence for a more modest claim: the corrected risk curve and safety fallback make adaptive synthetic augmentation stable enough to avoid the much larger failures of naive synthetic-use rules. \Cref{fig:adaptive_alloc} and \Cref{fig:adaptive_regret} show allocation tracking and residual regret; full adaptive summaries are in \Cref{tab:adaptive}.
+
+\subsection{Inference and coverage}\label{ssec:exp4}
+
+Experiment~4 focuses on regimes where residual synthetic bias can be large relative to standard error: $\beta\in\{0.4,0.5,0.75,1.0\}$, $\rho=1$, and $n\in\{200,500,1000,2000,5000\}$. The point-estimation message and the inference message separate cleanly. Naive Wald intervals around the MSE-optimal estimator have the weakest coverage, with full-grid range $0.855$--$0.955$ and median $0.916$. Validation-debiased intervals have range $0.938$--$0.964$ and median $0.953$, closest to nominal among the synthetic intervals. The worst naive cell is the parametric knife edge ($\beta=0.5$, $\rho=1$, $n=500$), where naive coverage is $0.855$ and validation-debiased coverage is $0.954$. \Cref{fig:coverage} plots the full coverage curves, and \Cref{tab:coverage} gives the complete coverage summary.
+
+\paragraph{Reproducibility.} Full configurations, raw and aggregated long-format results, and the analysis notebook used to render \Cref{fig:scaling}--\Cref{fig:coverage} are available at \texttt{<anon>} (URL withheld for blind submission).
+
+
+% [Figures showing oracle scaling (\Cref{fig:scaling}) and MSE-ratio
+%  comparison (\Cref{fig:mse_compare}) moved to Appendix~\ref{app:experiments}
+%  to fit the 9-page main-content limit; reproduced there verbatim.]
+
+% [Figures showing adaptive allocation/regret (\Cref{fig:adaptive_alloc},
+%  \Cref{fig:adaptive_regret}) and 95\% interval coverage
+%  (\Cref{fig:coverage}) moved to Appendix~\ref{app:experiments} to fit the
+%  9-page main-content limit; full captions and panels are reproduced
+%  there verbatim.]
+
+% =====================================================================
+% POLISHED

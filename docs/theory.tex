@@ -1,0 +1,809 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper, margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm, mathtools}
+\usepackage{bm}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage[capitalize,nameinlink]{cleveref}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{assumption}{Assumption}[section]
+\newtheorem{definition}[theorem]{Definition}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\crefname{assumption}{Assumption}{Assumptions}
+\Crefname{assumption}{Assumption}{Assumptions}
+\crefname{remark}{Remark}{Remarks}
+\Crefname{remark}{Remark}{Remarks}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\MSE}{\operatorname{MSE}}
+\newcommand{\indep}{\perp\!\!\!\perp}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\title{Optimal Real-Data Allocation\\for Synthetic-Data-Augmented Inference\\[0.4em]\large Setup, Model, and Theory}
+\date{}
+\author{}
+
+\begin{document}
+\maketitle
+
+\section{Setup and Model}
+\label{sec:setup}
+
+\subsection{Probability space, estimand, and observables}
+\label{ssec:probability}
+
+Fix a probability space $(\Omega,\mathcal{F},\Prob)$ and a measurable space $(\mathcal{X},\mathcal{B})$. Let $P^*$ denote the data-generating distribution on $\mathcal{X}$ and let $\theta:\mathcal{P}\to\R$ be a real-valued functional defined on a class $\mathcal{P}$ of distributions on $\mathcal{X}$ that contains $P^*$ and the synthetic distributions introduced below. The target estimand is $\theta^* := \theta(P^*)$. We treat $\theta^*$ as scalar throughout this section; the vector extension is recorded in \cref{rem:vector}.
+
+The researcher observes a real sample
+\begin{equation}
+X_1,\dots,X_n \overset{\mathrm{i.i.d.}}{\sim} P^*.
+\end{equation}
+She also has access to a calibratable synthetic-data generator, formalized below. The synthetic generator's randomness is driven by an auxiliary i.i.d.\ stream $\{U_j\}_{j\ge1}$ in some space $(\mathcal{U},\mathcal{B}_{\mathcal{U}})$ with distribution $Q$, independent of $\{X_i\}$. Sample-size sequences $m_n,x,n_v\in\N$ index the synthetic, calibration, and validation budgets respectively.
+
+\subsection{Sample-splitting partition}
+\label{ssec:splitting}
+
+Let $\Pi_n=(C_x,E_x,V_x)$ denote a measurable partition of $[n]:=\{1,\dots,n\}$ into a \emph{calibration} subset $C_x$ of size $x$, an \emph{estimation} subset $E_x$, and a (possibly empty) \emph{validation} subset $V_x$. Two configurations are used:
+\begin{itemize}
+\item \textbf{Linear configuration.} $V_x=\emptyset$ and $E_x=[n]\setminus C_x$, so $|E_x|=n-x$.
+\item \textbf{PPI configuration.} $E_x=\emptyset$ and $V_x=[n]\setminus C_x$, so $|V_x|=n-x$.
+\end{itemize}
+Sample splitting is enforced throughout: the estimators we construct depend on the partition only through the indicated subsets, and the partition is independent of $\{X_i\}$ (e.g.\ a fixed deterministic partition or one drawn from an independent randomization device). Cross-fitting averages over an ensemble of partitions and is treated in the algorithmic section. Let $\mathcal{F}_C:=\sigma(\{X_i\}_{i\in C_x})$ denote the calibration $\sigma$-field.
+
+\subsection{Real-data estimator}
+\label{ssec:real}
+
+\begin{assumption}[Asymptotic linearity of the real estimator]\label{asm:al-real}
+There exists a measurable function $\psi:\mathcal{X}\to\R$ with $\E_{P^*}[\psi(X_1)]=0$ and $\Var_{P^*}(\psi(X_1))=a\in(0,\infty)$ such that, for every deterministic sequence of estimation subsets $E\subset[n]$ with $|E|\to\infty$,
+\begin{equation}\label{eq:al-real}
+\hat\theta_R(E)-\theta^*\;=\;\frac{1}{|E|}\sum_{i\in E}\psi(X_i)\;+\;r_R(E),
+\end{equation}
+where the remainder satisfies $\E[r_R(E)]=0$ and $\E[r_R(E)^2]=o(|E|^{-1})$.
+\end{assumption}
+
+The function $\psi$ is the influence function of $\hat\theta_R$. Under \cref{asm:al-real},
+\begin{equation}
+V_R(x):=\Var\bigl(\hat\theta_R(E_x)\bigr)=\frac{a}{n-x}+o\bigl((n-x)^{-1}\bigr),\qquad |E_x|=n-x.
+\end{equation}
+We write $V_R(x)=a/(n-x)$ for the leading-order variance, absorbing the $o(\cdot)$ remainder into the $1+o(1)$ factors that appear throughout.
+
+\subsection{Calibratable synthetic generator}
+\label{ssec:generator}
+
+A \emph{calibration channel} is a measurable family of stochastic kernels
+\begin{equation}
+\mathcal{G}:\mathcal{X}^{x}\times\mathcal{U}\to\mathcal{X},\qquad \mathcal{G}(\bm{X}_C;U)\sim P_{\bm{X}_C}\quad\text{for $\bm{X}_C\in\mathcal{X}^x$, $U\sim Q$,}
+\end{equation}
+inducing a calibrated synthetic distribution $P_x:=P_{\bm{X}_C}$ that depends on the calibration sample $\bm{X}_C=\{X_i\}_{i\in C_x}$. The pseudo-true parameter is $\theta_x:=\theta(P_x)$, which is $\mathcal{F}_C$-measurable and in general nondegenerate. The \emph{calibration error} is
+\begin{equation}
+\Delta(x):=\theta_x-\theta^*,\qquad \E[\Delta(x)\mid\mathcal{F}_C]=\Delta(x).
+\end{equation}
+Define the \emph{expected squared calibration error} as
+\begin{equation}\label{eq:bsq-def}
+b^2(x):=\E[\Delta(x)^2]\;=\;\bigl(\E[\Delta(x)]\bigr)^2+\Var(\Delta(x)).
+\end{equation}
+This is the unconditional second moment of the bias and decomposes into systematic and stochastic components; both are absorbed into the working model below. (The previous draft conflated the random $\Delta(x)$ with its $L^2$-norm; the working assumption is on the deterministic quantity $b^2(x)$.)
+
+\subsection{Synthetic estimator}
+\label{ssec:synth}
+
+Conditionally on $\mathcal{F}_C$, draw synthetic observations
+\begin{equation}
+Z_1,\dots,Z_{m_n}\mid\mathcal{F}_C\;\overset{\mathrm{i.i.d.}}{\sim}\;P_x,
+\end{equation}
+generated using fresh randomness from the auxiliary stream and independent of $\hat\theta_R(E_x)$. The synthetic estimator $\hat\theta_S(x)$ is computed from $\{Z_j\}_{j=1}^{m_n}$.
+
+\begin{assumption}[Asymptotic linearity of the synthetic estimator]\label{asm:al-synth}
+There exists a measurable family $(\phi_x)_{x\ge1}$ such that conditionally on $\mathcal{F}_C$,
+\begin{equation}\label{eq:al-synth}
+\hat\theta_S(x)-\theta_x\;=\;\frac{1}{m_n}\sum_{j=1}^{m_n}\phi_x(Z_j)\;+\;r_S(x),
+\end{equation}
+with $\E[\phi_x(Z_1)\mid\mathcal{F}_C]=0$, $\Var(\phi_x(Z_1)\mid\mathcal{F}_C)=\sigma_S^2(x)$, $\E[r_S(x)\mid\mathcal{F}_C]=0$, and $\E[r_S(x)^2]=o(m_n^{-1})$. Furthermore there exists a constant $\overline\sigma_S^2<\infty$ such that $\E[\sigma_S^2(x)]\to\overline\sigma_S^2$ uniformly across the regimes considered.
+\end{assumption}
+
+Define the synthetic sampling variance
+\begin{equation}
+v_n:=\overline\sigma_S^2/m_n,\qquad \E\bigl[\Var(\hat\theta_S\mid\mathcal{F}_C)\bigr]=v_n\{1+o(1)\}.
+\end{equation}
+
+\begin{lemma}[Synthetic-error decomposition]\label{lem:Bn}
+Under \cref{asm:al-synth},
+\begin{equation}\label{eq:Bn-def}
+\mathcal{B}_n(x):=\E\bigl[(\hat\theta_S(x)-\theta^*)^2\bigr]\;=\;v_n+b^2(x)+o(v_n)+o(b^2(x)).
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Conditionally on $\mathcal{F}_C$, $\hat\theta_S(x)-\theta^*=(\hat\theta_S(x)-\theta_x)+\Delta(x)$. The first term has conditional mean $0$ and conditional variance $\sigma_S^2(x)/m_n+o(m_n^{-1})$ by \cref{asm:al-synth}; the second term is $\mathcal{F}_C$-measurable. Hence
+\begin{equation*}
+\E[(\hat\theta_S-\theta^*)^2\mid\mathcal{F}_C]=\frac{\sigma_S^2(x)}{m_n}+\Delta(x)^2+o(m_n^{-1}).
+\end{equation*}
+Taking unconditional expectations and using $\E[\sigma_S^2(x)/m_n]=v_n\{1+o(1)\}$ together with $\E[\Delta(x)^2]=b^2(x)$ yields the claim.
+\end{proof}
+
+\subsection{Working model}
+\label{ssec:working-model}
+
+\begin{assumption}[Power-law calibration]\label{asm:pl}
+There exist $c>0$, $\beta>0$, and a deterministic sequence $\eta_x\to0$ as $x\to\infty$ such that
+\begin{equation}\label{eq:pl}
+b^2(x)\;=\;c\,x^{-2\beta}\,(1+\eta_x)\qquad\text{for all }x\ge1.
+\end{equation}
+\end{assumption}
+
+\begin{assumption}[Synthetic-variance regime]\label{asm:vn}
+There exist $v_0>0$, $\rho\ge0$, and $\zeta_n\to0$ such that
+\begin{equation}\label{eq:vn}
+v_n\;=\;v_0\,n^{-\rho}\,(1+\zeta_n).
+\end{equation}
+\end{assumption}
+
+The case $m_n\asymp n^\rho$ with constant per-sample variance gives \cref{asm:vn}. The headline scenario $m_n\asymp n$ corresponds to $\rho=1$.
+
+\begin{remark}[Plateau bias and misspecification]\label{rem:plateau-setup}
+The plateau-bias generalization $b^2(x)=b_\infty^2+cx^{-2\beta}(1+\eta_x)$ with $b_\infty^2\ge0$ relaxes the power-law assumption to allow irreducible bias from generator misspecification. Setting $b_\infty^2=0$ recovers \cref{asm:pl}. The plateau case is treated separately in \cref{prop:plateau}.
+\end{remark}
+
+\begin{remark}[Vector estimands]\label{rem:vector}
+For $\theta^*\in\R^d$, replace $a$ by a positive-definite covariance matrix $\Sigma_R$ and $b^2(x)$ by the matrix $\E[\Delta(x)\Delta(x)^\top]$; replace scalar variances by traces of the corresponding matrices. The matrix-weighted optimum is recorded in \cref{rem:vector-mix} below.
+\end{remark}
+
+\subsection{Two estimator classes}
+\label{ssec:classes}
+
+We study two estimator classes built from the calibrated generator and the sample-split partition.
+
+\paragraph{Linear allocation estimator.}
+For the linear configuration ($V_x=\emptyset$) and a mixing weight $\alpha\in[0,1]$, define
+\begin{equation}\label{eq:linest}
+\hat\theta^{\mathrm{L}}(\alpha,x):=\alpha\,\hat\theta_R(E_x)+(1-\alpha)\,\hat\theta_S(x).
+\end{equation}
+
+\paragraph{Validation-debiased (PPI) estimator.}
+Assume the synthetic distribution admits a measurable functional representative $\tilde g_x:\mathcal{X}\to\R$ satisfying
+\begin{equation}\label{eq:tildeg}
+\E_{X\sim P^*}\bigl[\tilde g_x(X)\mid\mathcal{F}_C\bigr]\;=\;\theta_x.
+\end{equation}
+For instance, when $\theta(P)=\E_P[g(W)]$ with $W=(X,Y)$ and $P_x$ has the same $X$-marginal as $P^*$, take $\tilde g_x(X)=\E_{P_x}[g(W)\mid X]$. For the PPI configuration ($E_x=\emptyset$, $V_x=[n]\setminus C_x$), define
+\begin{equation}\label{eq:ppi}
+\hat\theta^{\mathrm{PP}}(x)\;:=\;\hat\theta_S(x)-\hat\theta_S^V(x)+\hat\theta_R^V,
+\end{equation}
+with
+\begin{equation*}
+\hat\theta_S^V(x):=\frac{1}{n_v}\sum_{i\in V_x}\tilde g_x(X_i),\qquad
+\hat\theta_R^V:=\frac{1}{n_v}\sum_{i\in V_x}g(X_i),\qquad n_v:=n-x.
+\end{equation*}
+For mean estimands $\theta^*=\E_{P^*}[g(W)]$, $\hat\theta_R^V=n_v^{-1}\sum_{i\in V_x}g(W_i)$.
+
+\begin{lemma}[Conditional independence]\label{lem:ci}
+Under \cref{asm:al-real,asm:al-synth} and the sample-splitting protocol of \cref{ssec:splitting}:
+\begin{enumerate}[label=\rm(\roman*),leftmargin=*]
+\item In the linear configuration, $\hat\theta_R(E_x)\indep\bigl(\mathcal{F}_C,\{Z_j\}_{j=1}^{m_n}\bigr)$. In particular, $\hat\theta_R(E_x)\indep\hat\theta_S(x)$ unconditionally.
+\item In the PPI configuration, $\bigl(\{X_i\}_{i\in V_x}\bigr)\indep\mathcal{F}_C$ and, conditionally on $\mathcal{F}_C$, $\hat\theta_S(x)\indep\bigl(\hat\theta_S^V(x),\hat\theta_R^V\bigr)$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+Both statements follow from the i.i.d.\ structure of $\{X_i\}$, the disjointness of $C_x,E_x,V_x$, and the independence of $\{U_j\}$ (and hence of the synthetic samples $\{Z_j\}$) from $\{X_i\}$.
+\end{proof}
+
+\section{Theory I: Linear Allocation Estimator}
+\label{sec:linear}
+
+Throughout this section we work with the linear configuration: $E_x=[n]\setminus C_x$, $V_x=\emptyset$, and $\hat\theta^{\mathrm{L}}(\alpha,x)$ defined by \cref{eq:linest}. Write $V_R(x)=a/(n-x)$ and $\mathcal{B}_n(x)=v_n+b^2(x)$.
+
+\subsection{MSE decomposition and optimal mixing}
+\label{ssec:mix}
+
+\begin{lemma}[Working MSE]\label{lem:mse-decomp}
+Under \cref{asm:al-real,asm:al-synth},
+\begin{equation}\label{eq:mse-decomp}
+\E\bigl[(\hat\theta^{\mathrm{L}}(\alpha,x)-\theta^*)^2\bigr]
+\;=\;\alpha^2 V_R(x)+(1-\alpha)^2\mathcal{B}_n(x)+\mathcal{R}_n(\alpha,x),
+\end{equation}
+where the remainder $\mathcal{R}_n(\alpha,x)=o(V_R(x))+o(\mathcal{B}_n(x))$ uniformly in $\alpha\in[0,1]$.
+\end{lemma}
+
+\begin{proof}
+Write $\xi_R=\hat\theta_R(E_x)-\theta^*$ and $\xi_S=\hat\theta_S(x)-\theta^*$. By \cref{lem:ci}(i), $\xi_R\indep\xi_S$, hence
+$\E[(\alpha\xi_R+(1-\alpha)\xi_S)^2]=\alpha^2\E[\xi_R^2]+(1-\alpha)^2\E[\xi_S^2]+2\alpha(1-\alpha)\E[\xi_R]\E[\xi_S]$.
+By \cref{asm:al-real}, $\E[\xi_R]=\E[r_R(E_x)]=0$, so the cross term vanishes exactly. The first two terms equal $\alpha^2 V_R(x)+(1-\alpha)^2\mathcal{B}_n(x)$ up to the stated remainders by \cref{asm:al-real} and \cref{lem:Bn}.
+\end{proof}
+
+We work hereafter with the leading-order MSE
+\begin{equation}\label{eq:mse-bar}
+\overline{\MSE}_n(\alpha,x):=\alpha^2 V_R(x)+(1-\alpha)^2\mathcal{B}_n(x).
+\end{equation}
+The actual MSE differs by a $1+o(1)$ multiplicative factor at the optimum, which is sufficient for relative-oracle results.
+
+\begin{proposition}[Optimal mixing weight and profiled risk]\label{prop:mix}
+For every $x\in[0,n)$ with $\mathcal{B}_n(x)<\infty$, the unique minimizer of $\overline{\MSE}_n(\cdot,x)$ on $[0,1]$ is
+\begin{equation}\label{eq:alpha-star}
+\alpha^*(x)\;=\;\frac{\mathcal{B}_n(x)}{V_R(x)+\mathcal{B}_n(x)}\in(0,1),
+\end{equation}
+and the profiled risk is
+\begin{equation}\label{eq:Rn}
+R_n(x):=\min_{\alpha\in[0,1]}\overline{\MSE}_n(\alpha,x)\;=\;\frac{V_R(x)\,\mathcal{B}_n(x)}{V_R(x)+\mathcal{B}_n(x)}\;=\;\frac{a\,\mathcal{B}_n(x)}{a+(n-x)\,\mathcal{B}_n(x)}.
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+$\overline{\MSE}_n(\alpha,x)$ is strictly convex in $\alpha$ with second derivative $2[V_R(x)+\mathcal{B}_n(x)]>0$. Setting the first derivative $2\alpha V_R(x)-2(1-\alpha)\mathcal{B}_n(x)$ to zero yields \cref{eq:alpha-star}. Both $V_R(x),\mathcal{B}_n(x)>0$, so the minimizer is interior. Substituting \cref{eq:alpha-star} into \cref{eq:mse-bar} gives the harmonic-risk formula \cref{eq:Rn}; the second equality uses $V_R(x)=a/(n-x)$.
+\end{proof}
+
+\begin{remark}[Vector mixing]\label{rem:vector-mix}
+For $\theta^*\in\R^d$, the trace-MSE-minimizing matrix weight $W^*(x)$ on $\hat\theta_R$ within the symmetric positive-definite class satisfies $W^*(x)=\Sigma_B(x)\bigl(\Sigma_R(x)+\Sigma_B(x)\bigr)^{-1}$ when $\Sigma_R(x)$ and $\Sigma_B(x)$ commute, where $\Sigma_R(x)=\Sigma_R/(n-x)$ and $\Sigma_B(x)=\Sigma_S/m_n+\E[\Delta(x)\Delta(x)^\top]$. In the noncommuting case, the trace-optimal symmetric weight is the unique positive-definite solution of $W\Sigma_R(x)+\Sigma_R(x)W=2W^{1/2}\Sigma_B(x)W^{1/2}$, obtained by spectral decomposition; the resulting profiled risk admits the same harmonic-mean structure in the GLS norm. We work in the scalar case throughout; componentwise application yields a valid, possibly suboptimal vector estimator.
+\end{remark}
+
+\subsection{Critical-point structure of the profiled risk}
+\label{ssec:critical}
+
+The next lemma is the technical workhorse: it determines the global shape of $R_n(\cdot)$ on $(0,n)$. It establishes that for $\beta>1/2$ the first-order condition has \emph{two} interior roots in the asymptotic regime of interest, and that only the larger root corresponds to a local minimum. The earlier draft of this paper implicitly selected the larger root; the analysis below makes the selection rigorous and identifies the smaller root as a local maximum.
+
+Define
+\begin{equation}\label{eq:Phi-def}
+\Phi(x)\;:=\;\mathcal{B}_n(x)^2\,x^{2\beta+1},\qquad x>0,
+\end{equation}
+and
+\begin{equation}\label{eq:H-def}
+H(x)\;:=\;a\,\mathcal{B}_n'(x)+\mathcal{B}_n(x)^2.
+\end{equation}
+Under \cref{asm:pl}, $\mathcal{B}_n'(x)=-2\beta cx^{-(2\beta+1)}+o(x^{-(2\beta+1)})$ where the $o(\cdot)$ comes from differentiating the $1+\eta_x$ factor; since the perturbation analysis is identical to the leading-order case, we treat the $1+\eta_x$ factor as $1$ within the lemmas, and record the perturbation argument in \cref{rem:perturb}.
+
+\begin{lemma}[Gradient of the profiled risk]\label{lem:gradient}
+For every $x\in(0,n)$,
+\begin{equation}\label{eq:Rn-prime}
+R_n'(x)\;=\;\frac{a\,H(x)}{\bigl[a+(n-x)\,\mathcal{B}_n(x)\bigr]^2}\;=\;\frac{a}{\bigl[a+(n-x)\mathcal{B}_n(x)\bigr]^2}\cdot\frac{\Phi(x)-2\beta a c}{x^{2\beta+1}}.
+\end{equation}
+In particular, $\mathrm{sign}\bigl(R_n'(x)\bigr)=\mathrm{sign}\bigl(\Phi(x)-2\beta ac\bigr)$.
+\end{lemma}
+
+\begin{proof}
+Write $R_n=u/w$ with $u(x)=a\mathcal{B}_n(x)$ and $w(x)=a+(n-x)\mathcal{B}_n(x)$. Then $u'(x)=a\mathcal{B}_n'(x)$ and $w'(x)=-\mathcal{B}_n(x)+(n-x)\mathcal{B}_n'(x)$. Compute:
+\begin{align*}
+u'w-uw'&=a\mathcal{B}_n'\bigl[a+(n-x)\mathcal{B}_n\bigr]-a\mathcal{B}_n\bigl[-\mathcal{B}_n+(n-x)\mathcal{B}_n'\bigr]\\
+&=a^2\mathcal{B}_n'+a(n-x)\mathcal{B}_n\mathcal{B}_n'+a\mathcal{B}_n^2-a(n-x)\mathcal{B}_n\mathcal{B}_n'\\
+&=a^2\mathcal{B}_n'+a\mathcal{B}_n^2=aH.
+\end{align*}
+The cancellation of the cross terms $\pm a(n-x)\mathcal{B}_n\mathcal{B}_n'$ is the algebraic reason the optimum does not depend on $n-x$ at first order. Multiplying $H$ by $x^{2\beta+1}$ gives $H\cdot x^{2\beta+1}=\mathcal{B}_n^2 x^{2\beta+1}-2\beta ac=\Phi(x)-2\beta ac$.
+\end{proof}
+
+\begin{lemma}[Shape of $\Phi$]\label{lem:shape}
+Under \cref{asm:pl}, the function $\Phi(x)=(v_n+cx^{-2\beta})^2 x^{2\beta+1}$ on $(0,\infty)$ satisfies:
+\begin{enumerate}[label=\rm(\alph*),leftmargin=*]
+\item $\Phi'(x)=x^{2\beta}\mathcal{B}_n(x)\bigl[(2\beta+1)v_n+(1-2\beta)cx^{-2\beta}\bigr]$.
+\item If $\beta\le 1/2$, then $\Phi'(x)>0$ for all $x>0$ (with $v_n>0$): $\Phi$ is strictly increasing, with $\Phi(0^+)=c^2\mathbf{1}\{\beta=1/2\}$ and $\Phi(\infty)=+\infty$.
+\item If $\beta>1/2$, then $\Phi$ is strictly U-shaped on $(0,\infty)$ with unique minimum at
+\begin{equation}\label{eq:xdagger}
+x^\dagger=\biggl(\frac{c(2\beta-1)}{(2\beta+1)v_n}\biggr)^{1/(2\beta)},
+\end{equation}
+and minimum value
+\begin{equation}\label{eq:Phidagger}
+\Phi^\dagger:=\Phi(x^\dagger)=K(\beta)\,c^{(2\beta+1)/(2\beta)}\,v_n^{(2\beta-1)/(2\beta)},\qquad K(\beta):=\frac{16\beta^2}{(2\beta+1)^{(2\beta+1)/(2\beta)}(2\beta-1)^{(2\beta-1)/(2\beta)}}.
+\end{equation}
+$\Phi(0^+)=\Phi(\infty)=+\infty$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+\textbf{(a)} Direct differentiation:
+$\Phi'(x)=2\mathcal{B}_n(x)\mathcal{B}_n'(x)x^{2\beta+1}+\mathcal{B}_n(x)^2(2\beta+1)x^{2\beta}=x^{2\beta}\mathcal{B}_n(x)\bigl[2\mathcal{B}_n'(x)x+(2\beta+1)\mathcal{B}_n(x)\bigr]$.
+Substituting $\mathcal{B}_n'(x)=-2\beta cx^{-(2\beta+1)}$ and $\mathcal{B}_n(x)=v_n+cx^{-2\beta}$:
+$2\mathcal{B}_n'(x)x+(2\beta+1)\mathcal{B}_n=-4\beta cx^{-2\beta}+(2\beta+1)v_n+(2\beta+1)cx^{-2\beta}=(2\beta+1)v_n+(1-2\beta)cx^{-2\beta}$.
+
+\textbf{(b)} For $\beta\le 1/2$, $1-2\beta\ge0$ and $v_n>0$, so the bracketed term in (a) is strictly positive on $(0,\infty)$; hence $\Phi'>0$ and $\Phi$ is strictly increasing. As $x\to0^+$, $\mathcal{B}_n(x)\sim cx^{-2\beta}$ so $\Phi(x)\sim c^2 x^{1-2\beta}$. For $\beta<1/2$ this tends to $0$; for $\beta=1/2$, $\Phi(x)=(v_nx+c)^2\to c^2$. As $x\to\infty$, $\mathcal{B}_n(x)\to v_n$ so $\Phi(x)\sim v_n^2 x^{2\beta+1}\to\infty$ (using $v_n>0$).
+
+\textbf{(c)} For $\beta>1/2$, $1-2\beta<0$. The bracket $(2\beta+1)v_n+(1-2\beta)cx^{-2\beta}$ is strictly decreasing in $cx^{-2\beta}$, equals $0$ when $cx^{-2\beta}=(2\beta+1)v_n/(2\beta-1)$, equivalently at $x=x^\dagger$ given by \cref{eq:xdagger}. For $x<x^\dagger$, $cx^{-2\beta}>(2\beta+1)v_n/(2\beta-1)$, so the bracket is negative and $\Phi'<0$. For $x>x^\dagger$, the bracket is positive, $\Phi'>0$. Hence $\Phi$ is strictly decreasing on $(0,x^\dagger)$ and strictly increasing on $(x^\dagger,\infty)$, with unique minimum at $x^\dagger$.
+
+To compute $\Phi^\dagger=\Phi(x^\dagger)$, use $cx^{\dagger\,-2\beta}=(2\beta+1)v_n/(2\beta-1)$, so
+\begin{equation*}
+\mathcal{B}_n(x^\dagger)=v_n+\frac{(2\beta+1)v_n}{2\beta-1}=v_n\cdot\frac{4\beta}{2\beta-1}.
+\end{equation*}
+From \cref{eq:xdagger}, $x^{\dagger\,2\beta+1}=[c(2\beta-1)/((2\beta+1)v_n)]^{(2\beta+1)/(2\beta)}$. Therefore
+\begin{align*}
+\Phi^\dagger&=\Bigl(\tfrac{4\beta v_n}{2\beta-1}\Bigr)^2\cdot\Bigl(\tfrac{c(2\beta-1)}{(2\beta+1)v_n}\Bigr)^{(2\beta+1)/(2\beta)}\\
+&=\frac{16\beta^2\,c^{(2\beta+1)/(2\beta)}}{(2\beta+1)^{(2\beta+1)/(2\beta)}(2\beta-1)^{(2\beta-1)/(2\beta)}}\cdot v_n^{(2\beta-1)/(2\beta)},
+\end{align*}
+where we used $(2\beta+1)/(2\beta)-2=(1-2\beta)/(2\beta)$ to combine the $(2\beta-1)$ powers, and $2-(2\beta+1)/(2\beta)=(2\beta-1)/(2\beta)$ for the $v_n$ exponent. The endpoint behavior follows from the same expansions used in (b): as $x\to0^+$, $\Phi\sim c^2x^{1-2\beta}\to+\infty$ since $1-2\beta<0$; as $x\to\infty$, $\Phi\sim v_n^2 x^{2\beta+1}\to+\infty$.
+\end{proof}
+
+\begin{lemma}[Critical points of $R_n$]\label{lem:critical}
+Assume \cref{asm:pl,asm:vn} with $a,c,v_n>0$.
+\begin{enumerate}[label=\rm(\roman*),leftmargin=*]
+\item If $\beta\le1/2$: $H$ has at most one zero on $(0,\infty)$. When it exists, it is the unique interior critical point of $R_n$ and is a strict local minimum. For $\beta<1/2$ the zero exists for every $v_n>0$. For $\beta=1/2$ the zero exists if and only if $a>c$.
+\item If $\beta>1/2$: Set $\Phi^\dagger$ as in \cref{eq:Phidagger}.
+\begin{enumerate}[label=\rm(\alph*),leftmargin=*]
+\item If $\Phi^\dagger>2\beta ac$: $R_n$ is strictly increasing on $(0,n)$; no interior critical point.
+\item If $\Phi^\dagger=2\beta ac$: $R_n$ has a unique inflection point at $x^\dagger$ but no strict local extremum.
+\item If $\Phi^\dagger<2\beta ac$: $H$ has exactly two zeros $x_1<x^\dagger<x_2$ in $(0,\infty)$. The point $x_1$ is a strict local maximum of $R_n$, and $x_2$ is a strict local minimum of $R_n$.
+\end{enumerate}
+Under \cref{asm:vn} with $\rho>0$, $\Phi^\dagger=K(\beta)c^{(2\beta+1)/(2\beta)}v_0^{(2\beta-1)/(2\beta)}n^{-\rho(2\beta-1)/(2\beta)}\to0$, so case \rm{(iic)} holds for all sufficiently large $n$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+By \cref{lem:gradient}, the zeros of $H$ on $(0,n)$ are exactly the points where $\Phi=2\beta ac$, and the sign of $R_n'$ matches the sign of $\Phi-2\beta ac$.
+
+\textbf{(i) $\beta\le 1/2$.} By \cref{lem:shape}(b), $\Phi$ is strictly increasing. Hence $\{x:\Phi(x)=2\beta ac\}$ contains at most one element. When it exists (call it $x^\circ$), $\Phi-2\beta ac<0$ on $(0,x^\circ)$ and $>0$ on $(x^\circ,\infty)$, so $R_n'<0$ before $x^\circ$ and $R_n'>0$ after; thus $x^\circ$ is a strict local minimum. For $\beta<1/2$, $\Phi(0^+)=0<2\beta ac<\Phi(\infty)=\infty$ so $x^\circ$ exists by continuity. For $\beta=1/2$, $\Phi(0^+)=c^2$ and $\Phi(\infty)=\infty$, so $x^\circ$ exists iff $c^2<2\beta ac=ac$, i.e.\ $c<a$.
+
+\textbf{(ii) $\beta>1/2$.} By \cref{lem:shape}(c), $\Phi$ is U-shaped with minimum $\Phi^\dagger$.
+
+\emph{Case (a).} If $\Phi^\dagger>2\beta ac$, then $\Phi(x)>\Phi^\dagger>2\beta ac$ for all $x>0$, so $R_n'>0$ throughout $(0,n)$.
+
+\emph{Case (b).} If $\Phi^\dagger=2\beta ac$, $\Phi-2\beta ac\ge0$ with equality only at $x^\dagger$; thus $R_n'\ge0$ with $R_n'(x^\dagger)=0$, but $R_n'$ does not change sign, so $x^\dagger$ is an inflection.
+
+\emph{Case (c).} If $\Phi^\dagger<2\beta ac$: Since $\Phi(0^+)=\Phi(\infty)=+\infty$ and $\Phi$ is continuous and strictly U-shaped with minimum $\Phi^\dagger<2\beta ac$, the equation $\Phi(x)=2\beta ac$ has exactly two solutions $x_1\in(0,x^\dagger)$ and $x_2\in(x^\dagger,\infty)$ by the intermediate value theorem applied to each strictly monotone branch. On $(0,x_1)$, $\Phi>2\beta ac$ so $R_n'>0$; on $(x_1,x_2)$, $\Phi<2\beta ac$ so $R_n'<0$; on $(x_2,\infty)$, $\Phi>2\beta ac$ so $R_n'>0$. Hence $x_1$ is a strict local maximum and $x_2$ a strict local minimum of $R_n$.
+
+The final claim follows from \cref{eq:Phidagger} and \cref{asm:vn}: with $v_n=v_0n^{-\rho}(1+o(1))$, $\Phi^\dagger\asymp n^{-\rho(2\beta-1)/(2\beta)}\to0$ when $\rho>0$ and $\beta>1/2$, so $\Phi^\dagger<2\beta ac$ for $n$ large.
+\end{proof}
+
+\begin{remark}[Selection of the active root]\label{rem:active-root}
+In case (iic), the global minimizer of $R_n$ on $[0,n]$ is one of $\{0,x_2,n\}$: the local maximum $x_1$ is always dominated by the boundary $0$. The active interior solution---i.e., the only interior local minimum---is therefore $x_2$. We refer to this as the \emph{active interior root} and write $x_n^\circ:=x_2$.
+\end{remark}
+
+\begin{remark}[Perturbative argument for the $1+\eta_x$ factor]\label{rem:perturb}
+Throughout this section we suppress the $1+\eta_x$ factor in $b^2(x)=cx^{-2\beta}(1+\eta_x)$. The claims of \cref{lem:shape,lem:critical} go through unchanged for the perturbed model: the bracket in $\Phi'(x)$ becomes $(2\beta+1)v_n+(1-2\beta)cx^{-2\beta}+o(cx^{-2\beta})$, which has the same sign behavior as the unperturbed bracket on $(0,\infty)$. The location of $x^\dagger$ shifts by a $1+o(1)$ factor, and the value $\Phi^\dagger$ by the same. The phase-diagram exponents in \cref{thm:phase} below are unaffected.
+\end{remark}
+
+\subsection{Exact first-order condition and safe-improvement}
+\label{ssec:foc}
+
+\begin{proposition}[Exact first-order condition]\label{prop:foc}
+Under \cref{asm:pl,asm:vn} with $v_n>0$, every interior critical point $x\in(0,n)$ of $R_n$ satisfies
+\begin{equation}\label{eq:foc}
+\boxed{\bigl(v_n+cx^{-2\beta}\bigr)^2\;=\;2\beta a c\,x^{-(2\beta+1)},}
+\end{equation}
+or equivalently, after multiplication by $x^{2\beta+1}$,
+\begin{equation}\label{eq:foc-poly}
+v_n^2\,x^{2\beta+1}+2cv_n\,x+c^2\,x^{1-2\beta}\;=\;2\beta a c.
+\end{equation}
+For $\beta\le1/2$ this equation has at most one solution; for $\beta>1/2$ it has at most two, and the active interior root is the larger.
+\end{proposition}
+
+\begin{proof}
+By \cref{lem:gradient,lem:critical}, interior critical points are exactly the solutions of $H(x)=0$, equivalently $\Phi(x)=2\beta ac$. Writing $\Phi(x)=(v_n+cx^{-2\beta})^2 x^{2\beta+1}$ and dividing by $x^{2\beta+1}$ gives \cref{eq:foc}; expanding the square gives \cref{eq:foc-poly}. Multiplicity follows from \cref{lem:critical}.
+\end{proof}
+
+\begin{proposition}[Exact safe-improvement condition]\label{prop:safe}
+For every $x\in(0,n)$,
+\begin{equation}\label{eq:safe}
+R_n(x)\;<\;\frac{a}{n}\quad\Longleftrightarrow\quad \boxed{x\,\mathcal{B}_n(x)\;<\;a.}
+\end{equation}
+Equivalently, $x(v_n+cx^{-2\beta})<a$.
+\end{proposition}
+
+\begin{proof}
+$R_n(x)=a\mathcal{B}_n(x)/[a+(n-x)\mathcal{B}_n(x)]<a/n$ iff $n\mathcal{B}_n<a+(n-x)\mathcal{B}_n$ iff $x\mathcal{B}_n<a$. The boundary risk is $R_n(0)=a/n$.
+\end{proof}
+
+\subsection{Phase diagram}
+\label{ssec:phase}
+
+\begin{theorem}[Allocation phase diagram]\label{thm:phase}
+Assume \cref{asm:pl,asm:vn}. Let $x_n^\circ$ denote the active interior root from \cref{rem:active-root} (when it exists) and $x_n^\star\in\argmin_{x\in[0,n]}R_n(x)$ the global oracle. As $n\to\infty$:
+
+\smallskip
+\noindent\textbf{Regime I (persistent synthetic variance, $\rho=0$).}
+Every interior critical point is $O(1)$. Hence $x_n^\star/n\to0$ regardless of $\beta$.
+
+\smallskip
+\noindent\textbf{Regime II (slow learning, $\beta<1/2$, $\rho>0$).}
+$x_n^\circ\to x_\infty:=(2\beta a/c)^{1/(1-2\beta)}\in(0,\infty)$, hence $x_n^\circ=O(1)$ and $x_n^\star/n\to0$. The first-order rate of $R_n(x_n^\star)$ matches the all-real rate $a/n$, with strict finite-sample shrinkage gain
+\begin{equation*}
+R_n(x_n^\star)\;=\;\frac{a}{n}-\frac{a^2/n^2}{cx_\infty^{-2\beta}}+o(n^{-2}).
+\end{equation*}
+
+\smallskip
+\noindent\textbf{Regime III (sublinear-calibration, $\beta>1/2$, $0<\rho<\beta+\tfrac12$).}
+For all sufficiently large $n$, the active interior root exists and satisfies
+\begin{equation}\label{eq:xn-circ-III}
+x_n^\circ\;=\;\Bigl(\tfrac{2\beta ac}{v_0^2}\Bigr)^{1/(2\beta+1)}\,n^{2\rho/(2\beta+1)}\,\bigl\{1+o(1)\bigr\}.
+\end{equation}
+Consequently $\lambda_n^\circ=x_n^\circ/n\asymp n^{2\rho/(2\beta+1)-1}\to 0$, and the safe-improvement condition holds asymptotically: $x_n^\circ\mathcal{B}_n(x_n^\circ)\to0<a$. Hence $x_n^\star=x_n^\circ\{1+o(1)\}$ and
+\begin{equation}\label{eq:Rn-circ-III}
+R_n(x_n^\star)\;=\;\frac{V_R(x_n^\circ)\,v_n}{V_R(x_n^\circ)+v_n}\,\bigl\{1+o(1)\bigr\}\;=\;\begin{cases}\dfrac{a}{n}\{1+o(1)\}&\text{if }\rho<1,\\[6pt]\dfrac{av_0}{(a+v_0)n}\{1+o(1)\}&\text{if }\rho=1,\\[6pt]\dfrac{v_0}{n^\rho}\{1+o(1)\}&\text{if }\rho>1.\end{cases}
+\end{equation}
+
+\smallskip
+\noindent\textbf{Regime IV (full calibration, $\beta>1/2$, $\rho>\beta+\tfrac12$).}
+The asymptotic interior root from \cref{eq:xn-circ-III} exceeds $n$ for $n$ large; the boundary $x=n$ is feasible and $\mathcal{B}_n(n)=v_n+cn^{-2\beta}=o(n^{-1})$ since both $\rho>1$ and $2\beta>1$. Thus $\lambda_n^\star\to1$ and $R_n(x_n^\star)=v_n+cn^{-2\beta}=o(n^{-1})$, beating the all-real rate.
+
+\smallskip
+\noindent\textbf{Regime V (parametric knife-edge, $\beta=1/2$).}
+An interior root exists iff $a>c$; in that case
+\begin{equation*}
+x_n^\circ=\frac{\sqrt{ac}-c}{v_0}\,n^\rho\bigl\{1+o(1)\bigr\}.
+\end{equation*}
+The boundary regime depends on $\rho$ and constants:
+\begin{itemize}[leftmargin=*]
+\item $\rho<1$: $\lambda_n^\circ\to0$, $R_n(x_n^\star)=a/n\{1+o(1)\}$ with strict finite-sample improvement.
+\item $\rho=1$: $\lambda_n^\circ\to(\sqrt{ac}-c)/v_0\in(0,1)$ provided $\sqrt{ac}-c<v_0$, with $R_n(x_n^\star)\asymp n^{-1}$.
+\item $\rho>1$: $x_n^\circ$ exceeds $n$; the global oracle is at the boundary if $c<a$, with $\lambda_n^\star\to1$ and $R_n(x_n^\star)=v_n+c/n=O(\max(n^{-\rho},n^{-1}))$.
+\end{itemize}
+If $a\le c$, no interior root exists, the safe-improvement condition fails asymptotically, and $x_n^\star=0$ is the global oracle.
+\end{theorem}
+
+\begin{proof}
+We analyze \cref{eq:foc-poly} in each regime, using \cref{lem:critical} for existence and identification of the active root.
+
+\medskip
+\noindent\textbf{Regime I ($\rho=0$, $v_n\to v_0>0$).}
+\Cref{eq:foc-poly} reads $v_0^2 x^{2\beta+1}+2cv_0 x+c^2 x^{1-2\beta}=2\beta ac+o(1)$, with no $n$-dependence in the leading coefficients. By \cref{lem:critical}, any active root is determined by the constants $(a,c,v_0,\beta)$ alone and is therefore $O(1)$. Compared to the unbounded $n$, $x_n^\circ/n\to0$. The candidates $\{0,x_n^\circ,n\}$ are evaluated by direct substitution; the global minimizer is one of $\{0,x_n^\circ\}$ since $R_n(n)=v_n+cn^{-2\beta}\to v_0$ does not vanish.
+
+\medskip
+\noindent\textbf{Regime II ($\beta<1/2$, $\rho>0$).}
+With $v_n\to0$, \cref{eq:foc-poly} reduces to $c^2 x^{1-2\beta}=2\beta ac+o(1)$ at any solution where $x$ remains $O(1)$. Solving: $x^{1-2\beta}=2\beta a/c+o(1)$, so $x_n^\circ\to x_\infty=(2\beta a/c)^{1/(1-2\beta)}$. (The terms $v_n^2 x^{2\beta+1}=O(v_n^2)$ and $2cv_n x=O(v_n)$ are $o(1)$ relative to the constant RHS for fixed $x$.) Conversely, suppose for contradiction $x_n^\circ\to\infty$. Then $c^2 x^{1-2\beta}\to\infty$ since $1-2\beta>0$, contradicting \cref{eq:foc-poly}. So $x_n^\circ=\Theta(1)$ as claimed.
+
+For the rate: $V_R(x_n^\circ)=a/(n-x_n^\circ)\sim a/n$ and $\mathcal{B}_n(x_n^\circ)=cx_n^{\circ\,-2\beta}+o(1)\to cx_\infty^{-2\beta}>0$. Substituting in \cref{eq:Rn}:
+\begin{equation*}
+R_n(x_n^\circ)=\frac{V_R\mathcal{B}_n}{V_R+\mathcal{B}_n}=V_R\cdot\frac{1}{1+V_R/\mathcal{B}_n}=V_R-\frac{V_R^2}{\mathcal{B}_n}+O\bigl((V_R/\mathcal{B}_n)^3\bigr),
+\end{equation*}
+which yields $R_n(x_n^\circ)=a/n-(a/n)^2/(cx_\infty^{-2\beta})+o(n^{-2})$. Safe-improvement: $x_\infty\mathcal{B}_n(x_\infty)\to x_\infty\cdot cx_\infty^{-2\beta}=cx_\infty^{1-2\beta}=c(2\beta a/c)=2\beta a<a$ since $\beta<1/2$. Hence $R_n(x_n^\circ)<a/n$ asymptotically, so $x_n^\star=x_n^\circ\{1+o(1)\}$.
+
+\medskip
+\noindent\textbf{Regime III ($\beta>1/2$, $0<\rho<\beta+\tfrac12$).}
+By \cref{lem:critical}(iic), the active root $x_n^\circ$ exists for $n$ large. Conjecture $cx_n^{\circ\,-2\beta}\ll v_n$ at the root, so $\mathcal{B}_n(x_n^\circ)=v_n\{1+o(1)\}$. \Cref{eq:foc} then gives $v_n^2=2\beta ac\,x_n^{\circ\,-(2\beta+1)}\{1+o(1)\}$, equivalently
+\begin{equation*}
+x_n^\circ=\Bigl(\tfrac{2\beta ac}{v_n^2}\Bigr)^{1/(2\beta+1)}\{1+o(1)\}=\Bigl(\tfrac{2\beta ac}{v_0^2}\Bigr)^{1/(2\beta+1)}n^{2\rho/(2\beta+1)}\{1+o(1)\}.
+\end{equation*}
+We verify the conjecture: $cx_n^{\circ\,-2\beta}=c\cdot[2\beta ac/v_0^2]^{-2\beta/(2\beta+1)}n^{-4\beta\rho/(2\beta+1)}$, while $v_n\asymp n^{-\rho}$. The ratio is $\Theta(n^{-4\beta\rho/(2\beta+1)+\rho})=\Theta(n^{-\rho(2\beta-1)/(2\beta+1)})$, which tends to $0$ since $\beta>1/2$ and $\rho>0$. Hence $cx_n^{\circ\,-2\beta}=o(v_n)$, confirming the conjecture.
+
+Feasibility: $x_n^\circ/n\asymp n^{2\rho/(2\beta+1)-1}$, with exponent $2\rho/(2\beta+1)-1<0$ iff $\rho<\beta+\tfrac12$. So $x_n^\circ=o(n)$. Safe-improvement: $x_n^\circ\mathcal{B}_n(x_n^\circ)\asymp n^{2\rho/(2\beta+1)}\cdot n^{-\rho}=n^{-\rho(2\beta-1)/(2\beta+1)}\to0<a$. Hence $R_n(x_n^\circ)<a/n$ and $R_n(x_n^\circ)<R_n(n)$ (the latter shown in Regime IV), so $x_n^\star=x_n^\circ$.
+
+For the risk asymptotics: $V_R(x_n^\circ)=a/(n-x_n^\circ)=a/n\{1+o(1)\}$ since $x_n^\circ=o(n)$. $\mathcal{B}_n(x_n^\circ)=v_n\{1+o(1)\}$. The harmonic-mean formula \cref{eq:Rn} gives the three subcases by direct substitution.
+
+\medskip
+\noindent\textbf{Regime IV ($\beta>1/2$, $\rho>\beta+\tfrac12$).}
+The asymptotic Regime-III formula gives $x_n^\circ\asymp n^{2\rho/(2\beta+1)}$ with exponent $>1$, so $x_n^\circ>n$ eventually---infeasible. Compare $R_n(0)=a/n$ to $R_n(n)=v_n+cn^{-2\beta}$. With $\rho>\beta+\tfrac12>1$ and $2\beta>1$: $v_n=O(n^{-\rho})=o(n^{-1})$ and $cn^{-2\beta}=o(n^{-1})$, so $R_n(n)=o(n^{-1})<a/n$. Hence $x_n^\star=n\{1+o(1)\}$ and $\lambda_n^\star\to1$.
+
+\medskip
+\noindent\textbf{Regime V ($\beta=1/2$).}
+\Cref{eq:foc-poly} becomes $(v_n x+c)^2=ac$ after multiplication by $x^2$ and taking the positive square root: $v_n x+c=\sqrt{ac}$ (the positive root; the negative root gives $x<0$). Solving: $x=(\sqrt{ac}-c)/v_n$, which is positive iff $a>c$. The asymptotic order follows from $v_n=v_0n^{-\rho}\{1+o(1)\}$.
+
+If $a>c$ and $\rho>1$, $x_n^\circ\sim((\sqrt{ac}-c)/v_0)n^\rho$ exceeds $n$ for $n$ large; compare boundaries. $R_n(n)=v_n+c/n\sim c/n$ since $\rho>1$. This beats $a/n$ iff $c<a$, which holds by hypothesis. Hence $\lambda_n^\star\to1$.
+
+If $a\le c$: $\sqrt{ac}\le c$ so the formula yields $x_n^\circ\le0$; no interior root. Safe-improvement at any $x>0$ requires $x(v_n+c/x)<a$, i.e., $v_nx+c<a$, which fails since $c\ge a$. So $x_n^\star=0$.
+\end{proof}
+
+\subsection{Robustness to plateau bias}
+\label{ssec:plateau}
+
+The following result addresses the plateau-bias generalization of \cref{rem:plateau-setup}, in which the synthetic generator is misspecified so that some bias is irreducible. This is the practically important case for foundation-model-generated synthetic data, where alignment-style misspecification need not vanish with calibration size.
+
+\begin{proposition}[Plateau-bias regime]\label{prop:plateau}
+Replace \cref{asm:pl} by $b^2(x)=b_\infty^2+cx^{-2\beta}\{1+o(1)\}$ with $b_\infty^2>0$ and $\beta>0$. Suppose \cref{asm:vn} holds with $\rho\ge0$. Then for $n$ sufficiently large, the active interior root $x_n^\circ$ exists and satisfies
+\begin{equation}\label{eq:xn-plateau}
+x_n^\circ\;\le\;\Bigl(\tfrac{2\beta ac}{b_\infty^4}\Bigr)^{1/(2\beta+1)}\;=\;O(1).
+\end{equation}
+Consequently $\lambda_n^\circ\to0$ for any $\beta>0$ and any $\rho\ge0$. The optimal risk satisfies $R_n(x_n^\star)=a/n\{1+o(1)\}$: synthetic augmentation provides at most a finite-sample shrinkage gain and no first-order rate improvement. The shrinkage gain is positive iff $b_\infty^2<a/x_n^\circ$.
+\end{proposition}
+
+\begin{proof}
+Now $\mathcal{B}_n(x)=v_n+b_\infty^2+cx^{-2\beta}\ge b_\infty^2>0$ for all $x>0$. The first-order condition $\mathcal{B}_n^2=2\beta acx^{-(2\beta+1)}$ requires $b_\infty^4\le \mathcal{B}_n^2=2\beta ac x^{-(2\beta+1)}$, hence $x^{2\beta+1}\le 2\beta ac/b_\infty^4$, giving \cref{eq:xn-plateau}. Hence $x_n^\circ=O(1)$.
+
+For the risk: $V_R(x_n^\circ)\sim a/n$ and $\mathcal{B}_n(x_n^\circ)\ge b_\infty^2>0$ is bounded away from zero. Hence $V_R\ll\mathcal{B}_n$ asymptotically, and as in Regime II, $R_n(x_n^\circ)=V_R-V_R^2/\mathcal{B}_n+o(V_R^2/\mathcal{B}_n)=a/n-(a/n)^2/\mathcal{B}_n(x_n^\circ)+o(n^{-2})$. The shrinkage is positive iff $R_n(x_n^\circ)<a/n$, equivalent by \cref{prop:safe} to $x_n^\circ\mathcal{B}_n(x_n^\circ)<a$, which becomes $x_n^\circ b_\infty^2<a$ at leading order.
+\end{proof}
+
+\Cref{prop:plateau} is the technical statement underlying a practical reading: \emph{plateau bias caps calibration at a constant budget regardless of $\beta,\rho$, and there is no first-order rate improvement over the all-real estimator.} The earlier phase-diagram regimes (especially Regime III) presume $b_\infty^2=0$. When $b_\infty^2$ is small but positive, Regime III's $\Theta(n^{2\rho/(2\beta+1)})$ scaling holds in the regime $b_\infty^2\le c x_n^{\circ\,-2\beta}$, i.e., until calibration would push the bias below the plateau; beyond that, calibration is wasted and \cref{prop:plateau} takes over.
+
+\subsection{Adaptive estimator and oracle inequality}
+\label{ssec:adaptive}
+
+The oracle allocation $x_n^\star$ depends on the unknown quantities $(a,c,\beta,v_n)$. The practical method estimates the risk curve $R_n(\cdot)$ on a grid and minimizes the estimate. We avoid plug-in estimators that require recovery of $\beta$ at parametric rate (which is generically infeasible), instead using grid minimization that needs only uniform relative consistency of the risk estimator.
+
+\paragraph{Algorithm 1 (Grid-based corrected Generalized Neyman allocation).}
+\begin{enumerate}[leftmargin=*,label=\arabic*.]
+\item Choose a grid $\mathcal{G}_n\subset\{1,\dots,n-1\}$ and number of folds $K$.
+\item Partition $[n]$ into $K$ folds; for each fold, the within-fold estimator uses out-of-fold data for calibration-pilot and bias-curve estimation, and within-fold data for final estimation.
+\item For each $x\in\mathcal{G}_n$:
+\begin{enumerate}[label=(\alph*)]
+\item Estimate the influence-function variance $\hat a$ using the empirical variance of $\psi$ evaluated on out-of-fold data.
+\item Calibrate the generator with $x$ out-of-fold real observations, draw $m_n$ synthetic observations, compute $\hat\theta_S(x)$, and estimate $\hat v_n$ from the synthetic sample.
+\item Estimate squared bias by sample-split moment matching: $\widehat{b^2}(x)=\bigl[(\hat\theta_S(x)-\hat\theta_R^V)^2-\widehat\Var(\hat\theta_S(x))-\widehat\Var(\hat\theta_R^V)\bigr]_+$ on a held-out validation slice.
+\item Set $\widehat{\mathcal{B}}_n(x)=\hat v_n+\widehat{b^2}(x)$, $\widehat V_R(x)=\hat a/(n-x)$, and $\widehat R_n(x)=\widehat V_R(x)\widehat{\mathcal{B}}_n(x)/[\widehat V_R(x)+\widehat{\mathcal{B}}_n(x)]$.
+\end{enumerate}
+\item Choose $\hat x_n=\argmin_{x\in\mathcal{G}_n\cup\{0,n\}}\widehat R_n(x)$, where $\widehat R_n(0)=\hat a/n$ and $\widehat R_n(n)=\hat v_n+\widehat{b^2}(n)$.
+\item Apply the safe fallback: if $\hat x_n\widehat{\mathcal{B}}_n(\hat x_n)\ge\hat a$, set $\hat x_n=0$.
+\item Compute $\hat\alpha=\widehat{\mathcal{B}}_n(\hat x_n)/[\widehat V_R(\hat x_n)+\widehat{\mathcal{B}}_n(\hat x_n)]$ and return $\hat\theta=\hat\alpha\hat\theta_R(\hat x_n)+(1-\hat\alpha)\hat\theta_S(\hat x_n)$.
+\item Cross-fit by averaging across folds.
+\end{enumerate}
+
+\begin{theorem}[Adaptive oracle inequality]\label{thm:adaptive}
+Let $\mathcal{G}_n^+:=\mathcal{G}_n\cup\{0,n\}$, $x_n^\star:=\argmin_{x\in\mathcal{G}_n^+}R_n(x)$, and $\hat x_n:=\argmin_{x\in\mathcal{G}_n^+}\widehat R_n(x)$. Suppose the estimated risk is uniformly relatively consistent on the grid:
+\begin{equation}\label{eq:Delta-n}
+\Delta_n\;:=\;\sup_{x\in\mathcal{G}_n^+}\biggl|\frac{\widehat R_n(x)}{R_n(x)}-1\biggr|\;\stackrel{p}{\to}\;0.
+\end{equation}
+Then
+\begin{equation}\label{eq:adaptive}
+\frac{R_n(\hat x_n)}{R_n(x_n^\star)}\;\stackrel{p}{\to}\;1.
+\end{equation}
+If furthermore the grid satisfies $\inf_{x\in\mathcal{G}_n}R_n(x)/\inf_{x\in[0,n]}R_n(x)\to 1$, then $R_n(\hat x_n)/\inf_{x\in[0,n]}R_n(x)\stackrel{p}{\to}1$.
+\end{theorem}
+
+\begin{proof}
+On the event $\{\Delta_n\le\delta\}$, $(1-\delta)R_n(x)\le\widehat R_n(x)\le(1+\delta)R_n(x)$ for every $x\in\mathcal{G}_n^+$. By definition of $\hat x_n$, $\widehat R_n(\hat x_n)\le\widehat R_n(x_n^\star)$. Chaining:
+\begin{equation*}
+(1-\delta)R_n(\hat x_n)\le\widehat R_n(\hat x_n)\le\widehat R_n(x_n^\star)\le(1+\delta)R_n(x_n^\star).
+\end{equation*}
+Hence $R_n(\hat x_n)/R_n(x_n^\star)\le(1+\delta)/(1-\delta)$. Since $R_n(\hat x_n)\ge R_n(x_n^\star)$ by oracle definition, the lower bound is $1$. Setting $\delta\to0$ in probability, both bounds converge to $1$, giving \cref{eq:adaptive}. The continuous-oracle claim follows by combining $R_n(x_n^\star)=\inf_{\mathcal{G}_n^+}R_n=(1+o(1))\inf_{[0,n]}R_n$ with \cref{eq:adaptive}.
+\end{proof}
+
+\begin{remark}[Verification of \cref{eq:Delta-n}]\label{rem:verify-delta}
+The conditions for \cref{eq:Delta-n} reduce to: (i) $\hat a/a\stackrel{p}{\to}1$, by sample variance of plug-in influence values; (ii) $\hat v_n/v_n\stackrel{p}{\to}1$, by sample variance of the synthetic estimator across multiple synthetic batches; and (iii) $\widehat{b^2}(x)/b^2(x)\stackrel{p}{\to}1$ uniformly over $\mathcal{G}_n^+$. Item (iii) is the binding requirement; for finite grids whose size grows polylogarithmically with $n$, the sample-split moment estimator achieves uniform relative consistency provided $b^2(x)\gg V_R(x)\vee v_n$ on the grid (i.e.\ the bias is detectable above the noise floor). On the bias-dominated portion of the grid this holds; on the variance-dominated portion, $\widehat R_n(x)$ converges to $V_R(x)$ and the harmonic-mean structure absorbs the noise in $\widehat{b^2}$. The truncation $[\cdot]_+$ in step 3(c) introduces a positive bias that is also $o(V_R(x))$ in this regime. A formal proof uses Bernstein's inequality and a union bound over $\mathcal{G}_n^+$; details are deferred to an appendix.
+\end{remark}
+
+\subsection{Asymptotic distribution and inference}
+\label{ssec:inference}
+
+Point estimation and inference are different problems: the MSE-optimal estimator can have residual bias of the same order as its standard error, in which case Wald intervals undercover. The next result characterizes the asymptotic distribution of the linear estimator at the oracle allocation.
+
+\begin{proposition}[Centered asymptotic normality]\label{prop:clt}
+Suppose \cref{asm:al-real,asm:al-synth,asm:pl,asm:vn} hold with $v_n>0$, and that the conditional Lindeberg condition holds for $\psi$ and $\phi_x$. Define $\Omega_n(x):=\alpha^*(x)^2 V_R(x)+(1-\alpha^*(x))^2 v_n$ as the stochastic-variance contribution to $\hat\theta^{\mathrm{L}}(\alpha^*(x_n^\star),x_n^\star)$. Then
+\begin{equation}\label{eq:clt}
+\frac{\hat\theta^{\mathrm{L}}(\alpha^*(x_n^\star),x_n^\star)-\theta^*-(1-\alpha^*(x_n^\star))\Delta(x_n^\star)}{\sqrt{\Omega_n(x_n^\star)}}\;\Rightarrow\;N(0,1),
+\end{equation}
+conditionally on $\mathcal{F}_C$ and unconditionally. Replacing oracle quantities by their estimates from \cref{thm:adaptive} preserves the CLT under the same regularity.
+\end{proposition}
+
+\begin{proof}
+By \cref{lem:ci}(i) and \cref{asm:al-real,asm:al-synth}, conditionally on $\mathcal{F}_C$,
+\begin{equation*}
+\hat\theta^{\mathrm{L}}-\theta^*=\alpha^*\bigl(\hat\theta_R-\theta^*\bigr)+(1-\alpha^*)\bigl(\hat\theta_S-\theta_x\bigr)+(1-\alpha^*)\Delta(x).
+\end{equation*}
+The first two summands are independent zero-mean martingale-difference averages with variances $\alpha^{*2}V_R$ and $(1-\alpha^*)^2 v_n+o(v_n)$ respectively; the third is $\mathcal{F}_C$-measurable. The Lindeberg-Feller CLT applied to the sum of two independent triangular arrays gives conditional asymptotic normality of the centered numerator with limiting variance $\Omega_n(x_n^\star)$. Adaptive oracle equivalence (\cref{thm:adaptive}) and Slutsky's theorem give the result with estimated weights.
+\end{proof}
+
+\begin{corollary}[Wald inference around $\theta^*$]\label{cor:wald}
+A two-sided Wald interval centered at $\hat\theta^{\mathrm{L}}$ with width $z_{1-\alpha/2}\sqrt{\Omega_n(x_n^\star)}$ has asymptotic coverage $1-\alpha$ for $\theta^*$ if and only if
+\begin{equation}\label{eq:wald-cond}
+(1-\alpha^*(x_n^\star))\Delta(x_n^\star)\;=\;o_p\bigl(\sqrt{\Omega_n(x_n^\star)}\bigr).
+\end{equation}
+Under \cref{thm:phase}, in Regime III with $\rho=1$ and $\beta>1/2$, \cref{eq:wald-cond} holds; in Regime V with $\beta=1/2$ and $\rho=1$, it generically fails.
+\end{corollary}
+
+\begin{proof}
+The first claim is immediate from \cref{prop:clt}. For Regime III with $\rho=1$, $\beta>1/2$: $\Omega_n\asymp n^{-1}$, $\Delta(x_n^\star)^2$ has expectation $b^2(x_n^\star)\asymp n^{-4\beta/(2\beta+1)}$, and $4\beta/(2\beta+1)>1$ iff $\beta>1/2$. So $\Delta(x_n^\star)=O_p(n^{-2\beta/(2\beta+1)})=o(n^{-1/2})$. Multiplying by $1-\alpha^*=O(1)$ preserves the order, giving \cref{eq:wald-cond}.
+
+For Regime V with $\rho=1$ and $a>c$: $\Omega_n\asymp n^{-1}$, $b^2(x_n^\star)\asymp n^{-2\beta}=n^{-1}$, so $\Delta(x_n^\star)$ is the same order as $\sqrt{\Omega_n}$, and \cref{eq:wald-cond} fails generically.
+\end{proof}
+
+\begin{remark}[Bias-aware inference]\label{rem:bias-aware}
+When \cref{eq:wald-cond} fails, valid intervals can be obtained by (i) undersmoothing (allocate $x>x_n^\star$ so that $b^2(x)=o(V_R(x)+v_n)$, paying a constant-factor MSE penalty), (ii) explicit bias subtraction using validation data (the PPI construction of \cref{sec:ppi}), or (iii) honest bias-aware intervals that widen by a bound on $|\Delta(x_n^\star)|$. We adopt (ii) in the next section.
+\end{remark}
+
+\section{Theory II: Validation-Debiased (PPI) Estimator}
+\label{sec:ppi}
+
+Throughout this section we work with the PPI configuration: $V_x=[n]\setminus C_x$, $E_x=\emptyset$, $n_v:=|V_x|=n-x$, and $\hat\theta^{\mathrm{PP}}(x)$ defined by \cref{eq:ppi}. We restrict to mean-functional estimands $\theta^*=\E_{P^*}[g(W)]$ and assume the synthetic generator preserves the marginal distribution of $X$ in the sense of \cref{eq:tildeg}.
+
+\subsection{Decomposition of the PPI error}
+\label{ssec:ppi-decomp}
+
+\begin{lemma}[PPI error decomposition]\label{lem:ppi-decomp}
+Under \cref{asm:al-synth} and the conditional independence of \cref{lem:ci}(ii),
+\begin{equation}\label{eq:ppi-decomp}
+\hat\theta^{\mathrm{PP}}(x)-\theta^*\;=\;\bigl[\hat\theta_S(x)-\theta_x\bigr]\;-\;\bigl[\hat\theta_S^V(x)-\theta_x\bigr]\;+\;\bigl[\hat\theta_R^V-\theta^*\bigr],
+\end{equation}
+where the three summands have zero conditional mean given $\mathcal{F}_C$ and are conditionally pairwise uncorrelated, except that the last two are negatively correlated through shared validation features.
+\end{lemma}
+
+\begin{proof}
+Using \cref{eq:ppi},
+$\hat\theta^{\mathrm{PP}}(x)-\theta^*=\hat\theta_S(x)-\hat\theta_S^V(x)+\hat\theta_R^V-\theta^*$.
+Adding and subtracting $\theta_x$ to the synthetic terms gives \cref{eq:ppi-decomp}. The conditional means: $\E[\hat\theta_S(x)-\theta_x\mid\mathcal{F}_C]=0$ by \cref{asm:al-synth}; $\E[\hat\theta_S^V(x)-\theta_x\mid\mathcal{F}_C]=\E[n_v^{-1}\sum_{V_x}(\tilde g_x(X_i)-\theta_x)\mid\mathcal{F}_C]=0$ by \cref{eq:tildeg} and the disjointness $V_x\cap C_x=\emptyset$; $\E[\hat\theta_R^V-\theta^*]=0$. Conditional uncorrelatedness of the first summand with the others follows from \cref{lem:ci}(ii).
+\end{proof}
+
+\begin{lemma}[Working MSE for PPI]\label{lem:ppi-mse}
+Define the residual function $\rho_x:\mathcal{X}\times\mathcal{Y}\to\R$ by $\rho_x(W):=g(W)-\tilde g_x(X)$ and the conditional residual variance
+\begin{equation}\label{eq:sigma-ppi}
+\sigma_{\mathrm{ppi}}^2(x):=\Var_{P^*}\bigl(\rho_x(W)\mid\mathcal{F}_C\bigr).
+\end{equation}
+Then
+\begin{equation}\label{eq:ppi-mse}
+\E\bigl[(\hat\theta^{\mathrm{PP}}(x)-\theta^*)^2\bigr]\;=\;v_n+\frac{\E[\sigma_{\mathrm{ppi}}^2(x)]}{n_v}+o(v_n+\E[\sigma_{\mathrm{ppi}}^2(x)]/n_v).
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+By \cref{lem:ppi-decomp}, $\hat\theta^{\mathrm{PP}}(x)-\theta^*=A+B+C$ with $A=\hat\theta_S(x)-\theta_x$, $B=-(\hat\theta_S^V(x)-\theta_x)$, and $C=\hat\theta_R^V-\theta^*$. We have $\E[A\mid\mathcal{F}_C]=0$ by \cref{asm:al-synth}, $\E[B\mid\mathcal{F}_C]=-\E_{X\sim P^*}[\tilde g_x(X)-\theta_x\mid\mathcal{F}_C]=0$ by \cref{eq:tildeg}, and $\E[C\mid\mathcal{F}_C]=\E_{P^*}[g(W)]-\theta^*=0$ since $\{W_i\}_{i\in V_x}\indep\mathcal{F}_C$. Hence the conditional mean is zero and the conditional MSE equals the conditional variance.
+
+By \cref{lem:ci}(ii), $A\indep(B,C)\mid\mathcal{F}_C$, so $\Cov(A,B+C\mid\mathcal{F}_C)=0$ and therefore
+\begin{equation*}
+\E[(\hat\theta^{\mathrm{PP}}(x)-\theta^*)^2\mid\mathcal{F}_C]\;=\;\Var(A\mid\mathcal{F}_C)\;+\;\Var(B+C\mid\mathcal{F}_C).
+\end{equation*}
+For the first term, $\Var(A\mid\mathcal{F}_C)=\sigma_S^2(x)/m_n+o(m_n^{-1})$ by \cref{asm:al-synth}. For the second, write
+\begin{equation*}
+B+C\;=\;\hat\theta_R^V-\hat\theta_S^V(x)\;=\;\frac{1}{n_v}\sum_{i\in V_x}\bigl[g(W_i)-\tilde g_x(X_i)\bigr]\;=\;\frac{1}{n_v}\sum_{i\in V_x}\rho_x(W_i).
+\end{equation*}
+Conditionally on $\mathcal{F}_C$, the $\rho_x(W_i)$ are i.i.d.\ across $i\in V_x$ with variance $\sigma_{\mathrm{ppi}}^2(x)$ (the conditional mean $\E[\rho_x(W)\mid\mathcal{F}_C]=-\Delta(x)$ enters $B+C$ only through the empirical-mean recentering, which leaves the variance unchanged). Hence
+$\Var(B+C\mid\mathcal{F}_C)=\sigma_{\mathrm{ppi}}^2(x)/n_v$.
+
+Combining,
+\begin{equation*}
+\E[(\hat\theta^{\mathrm{PP}}(x)-\theta^*)^2\mid\mathcal{F}_C]\;=\;\frac{\sigma_S^2(x)}{m_n}+\frac{\sigma_{\mathrm{ppi}}^2(x)}{n_v}+o(m_n^{-1}).
+\end{equation*}
+Taking unconditional expectations and applying \cref{asm:al-synth} (so that $\E[\sigma_S^2(x)/m_n]=v_n\{1+o(1)\}$) yields \cref{eq:ppi-mse}.
+\end{proof}
+
+\subsection{Working model for PPI: residual variance decay}
+\label{ssec:ppi-working}
+
+The residual variance $\sigma_{\mathrm{ppi}}^2(x)$ has a useful decomposition. Define $\tilde g^*(X):=\E_{P^*}[g(W)\mid X]$ (the true conditional mean function) and $\sigma_{\mathrm{irr}}^2:=\E_{P^*}[\Var_{P^*}(g(W)\mid X)]$ (the irreducible noise level).
+
+\begin{lemma}[Residual variance decomposition]\label{lem:res-var}
+For every $x$ and almost every realization of $\mathcal{F}_C$,
+\begin{equation}\label{eq:res-var}
+\sigma_{\mathrm{ppi}}^2(x)\;=\;\sigma_{\mathrm{irr}}^2\;+\;\Var_{P^*}\bigl(\tilde g^*(X)-\tilde g_x(X)\,\big|\,\mathcal{F}_C\bigr).
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Decompose $\rho_x(W)=g(W)-\tilde g_x(X)=[g(W)-\tilde g^*(X)]+[\tilde g^*(X)-\tilde g_x(X)]$. Conditional on $\mathcal{F}_C$, $\tilde g_x$ is fixed, so the second summand is a function of $X$ alone. Conditioning further on $X$, $\E_{P^*}[g(W)-\tilde g^*(X)\mid X,\mathcal{F}_C]=\E_{P^*}[g(W)\mid X]-\tilde g^*(X)=0$ by definition of $\tilde g^*$. Hence
+\begin{equation*}
+\E_{P^*}\bigl[(g(W)-\tilde g^*(X))(\tilde g^*(X)-\tilde g_x(X))\,\big|\,\mathcal{F}_C\bigr]\;=\;\E_{P^*}\Bigl[(\tilde g^*(X)-\tilde g_x(X))\,\E_{P^*}[g(W)-\tilde g^*(X)\mid X,\mathcal{F}_C]\,\Big|\,\mathcal{F}_C\Bigr]\;=\;0,
+\end{equation*}
+i.e., the two summands of $\rho_x$ are conditionally uncorrelated. Therefore
+\begin{equation*}
+\Var_{P^*}\bigl(\rho_x(W)\,\big|\,\mathcal{F}_C\bigr)\;=\;\Var_{P^*}\bigl(g(W)-\tilde g^*(X)\,\big|\,\mathcal{F}_C\bigr)+\Var_{P^*}\bigl(\tilde g^*(X)-\tilde g_x(X)\,\big|\,\mathcal{F}_C\bigr).
+\end{equation*}
+The first term equals $\E_{P^*}[\Var_{P^*}(g(W)\mid X)]=\sigma_{\mathrm{irr}}^2$ (independent of $\mathcal{F}_C$ since $g(W)-\tilde g^*(X)$ has $X$-conditional mean $0$ and the $X$-marginal is $P^*$).
+\end{proof}
+
+\begin{assumption}[Power-law residual variance]\label{asm:res-pl}
+There exist $d>0$, $\gamma\in(0,\beta]$, and a deterministic sequence $\mu_x\to0$ such that
+\begin{equation}\label{eq:res-pl}
+\E\bigl[\Var_{P^*}(\tilde g^*(X)-\tilde g_x(X)\mid\mathcal{F}_C)\bigr]\;=\;d\,x^{-2\gamma}\,(1+\mu_x).
+\end{equation}
+\end{assumption}
+
+The constraint $\gamma\le\beta$ is automatic: since $\Delta(x)=\E_{P^*}[\tilde g_x(X)\mid\mathcal{F}_C]-\theta^*$, by Jensen's inequality $\E[\Delta(x)^2]\le\E[\E_{P^*}[(\tilde g_x(X)-\tilde g^*(X))^2\mid\mathcal{F}_C]]+\bigl(\E[\Delta(x)]\bigr)^2$, and absorbing constants gives $b^2(x)\lesssim\E\Var_{P^*}(\tilde g_x(X)-\tilde g^*(X))+\text{const}$, hence $\beta\ge\gamma$ asymptotically.
+
+Under \cref{asm:res-pl},
+\begin{equation}\label{eq:bar-sigma-ppi}
+\E[\sigma_{\mathrm{ppi}}^2(x)]\;=\;\sigma_{\mathrm{irr}}^2\;+\;d\,x^{-2\gamma}\,(1+\mu_x).
+\end{equation}
+
+Substituting in \cref{eq:ppi-mse} gives the working PPI MSE
+\begin{equation}\label{eq:Psi-def}
+\Psi_n(x)\;:=\;v_n\;+\;\frac{\sigma_{\mathrm{irr}}^2+d\,x^{-2\gamma}}{n-x},\qquad x\in(0,n).
+\end{equation}
+
+\subsection{First-order condition and phase diagram for PPI}
+\label{ssec:ppi-phase}
+
+\begin{proposition}[PPI first-order condition]\label{prop:ppi-foc}
+Under \cref{asm:al-synth,asm:vn,asm:res-pl}, every interior critical point $x\in(0,n)$ of $\Psi_n$ satisfies
+\begin{equation}\label{eq:ppi-foc}
+\boxed{\sigma_{\mathrm{irr}}^2\,x^{2\gamma+1}\;+\;(2\gamma+1)\,d\,x\;=\;2\gamma\,d\,n.}
+\end{equation}
+For every $\gamma>0$, $\sigma_{\mathrm{irr}}^2,d>0$, the LHS is strictly increasing on $(0,\infty)$, so \cref{eq:ppi-foc} has a unique solution $x_n^{\mathrm{PP}}>0$.
+\end{proposition}
+
+\begin{proof}
+Differentiate $\Psi_n$:
+\begin{equation*}
+\Psi_n'(x)=\frac{-2\gamma d x^{-2\gamma-1}(n-x)+(\sigma_{\mathrm{irr}}^2+dx^{-2\gamma})}{(n-x)^2}.
+\end{equation*}
+Setting the numerator to zero: $2\gamma d x^{-2\gamma-1}(n-x)=\sigma_{\mathrm{irr}}^2+dx^{-2\gamma}$. Multiplying by $x^{2\gamma+1}$ and rearranging gives \cref{eq:ppi-foc}. The LHS $f(x):=\sigma_{\mathrm{irr}}^2 x^{2\gamma+1}+(2\gamma+1)dx$ is strictly increasing with $f(0)=0$ and $f(\infty)=\infty$, so the equation has a unique positive solution.
+\end{proof}
+
+\begin{theorem}[PPI phase diagram]\label{thm:ppi-phase}
+Under \cref{asm:al-synth,asm:vn,asm:res-pl} with $\sigma_{\mathrm{irr}}^2>0$, $d>0$, $\gamma>0$:
+\begin{enumerate}[label=\rm(\roman*),leftmargin=*]
+\item The unique solution of \cref{eq:ppi-foc} is
+\begin{equation}\label{eq:xn-ppi}
+x_n^{\mathrm{PP}}\;=\;\Bigl(\tfrac{2\gamma d}{\sigma_{\mathrm{irr}}^2}\Bigr)^{1/(2\gamma+1)}\,n^{1/(2\gamma+1)}\,\bigl\{1+o(1)\bigr\}.
+\end{equation}
+In particular $x_n^{\mathrm{PP}}/n\to0$ for every $\gamma>0$.
+\item The optimal PPI risk satisfies
+\begin{equation}\label{eq:Psi-opt}
+\Psi_n(x_n^{\mathrm{PP}})\;=\;v_n+\frac{\sigma_{\mathrm{irr}}^2}{n}+O\bigl(n^{-(4\gamma+1)/(2\gamma+1)}\bigr).
+\end{equation}
+\item In the headline regime $\rho=1$:
+\begin{equation*}
+\Psi_n(x_n^{\mathrm{PP}})\;=\;\frac{\sigma_{\mathrm{irr}}^2+v_0}{n}\,\bigl\{1+o(1)\bigr\}.
+\end{equation*}
+For $\rho>1$, $v_n=o(1/n)$ so $\Psi_n(x_n^{\mathrm{PP}})\sim\sigma_{\mathrm{irr}}^2/n$. For $\rho<1$, $v_n$ dominates: $\Psi_n(x_n^{\mathrm{PP}})\sim v_0 n^{-\rho}$.
+\item PPI dominates the all-real estimator (rate $a/n$ where $a=\sigma_{\mathrm{irr}}^2+\Var_{P^*}(\tilde g^*(X))$) asymptotically iff $\sigma_{\mathrm{irr}}^2+v_n\cdot n<a$ in the limit. With $\rho\ge1$ this reduces to $\sigma_{\mathrm{irr}}^2<a$, equivalently $\Var_{P^*}(\tilde g^*(X))>0$ (the regression has nonzero predictive power).
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\textbf{(i)} Conjecture $x_n^{\mathrm{PP}}\to\infty$ with $x_n^{\mathrm{PP}}/n\to0$. Then in \cref{eq:ppi-foc}, the LHS term $(2\gamma+1)dx_n^{\mathrm{PP}}$ is $o(n)$ if $x_n^{\mathrm{PP}}=o(n)$, while $\sigma_{\mathrm{irr}}^2 x_n^{\mathrm{PP}\,2\gamma+1}=2\gamma dn\{1+o(1)\}$. Solving: $x_n^{\mathrm{PP}}=(2\gamma d/\sigma_{\mathrm{irr}}^2)^{1/(2\gamma+1)} n^{1/(2\gamma+1)}\{1+o(1)\}$. Verify the conjecture: $1/(2\gamma+1)<1$ for $\gamma>0$, so $x_n^{\mathrm{PP}}=o(n)$, and the dropped term $(2\gamma+1)dx_n^{\mathrm{PP}}=O(n^{1/(2\gamma+1)})=o(n)$. Hence the asymptotic equation is consistent.
+
+\textbf{(ii)} At $x_n^{\mathrm{PP}}$, $dx_n^{\mathrm{PP}\,-2\gamma}=d(2\gamma d/\sigma_{\mathrm{irr}}^2)^{-2\gamma/(2\gamma+1)} n^{-2\gamma/(2\gamma+1)}=O(n^{-2\gamma/(2\gamma+1)})$, while $\sigma_{\mathrm{irr}}^2$ is constant. So $\sigma_{\mathrm{irr}}^2+dx_n^{\mathrm{PP}\,-2\gamma}=\sigma_{\mathrm{irr}}^2\{1+o(1)\}$. And $n-x_n^{\mathrm{PP}}=n\{1+o(1)\}$. Substituting into \cref{eq:Psi-def}:
+\begin{equation*}
+\Psi_n(x_n^{\mathrm{PP}})=v_n+\frac{\sigma_{\mathrm{irr}}^2\{1+o(1)\}}{n\{1+o(1)\}}=v_n+\sigma_{\mathrm{irr}}^2/n+O(n^{-1}\cdot n^{-2\gamma/(2\gamma+1)})=v_n+\sigma_{\mathrm{irr}}^2/n+O(n^{-(4\gamma+1)/(2\gamma+1)}).
+\end{equation*}
+The error term is $o(1/n)$ since $(4\gamma+1)/(2\gamma+1)>1$ iff $\gamma>0$.
+
+\textbf{(iii)} Direct from (ii) and \cref{asm:vn}.
+
+\textbf{(iv)} The all-real estimator has variance $a/n$ with $a=\Var_{P^*}(g(W))=\sigma_{\mathrm{irr}}^2+\Var_{P^*}(\tilde g^*(X))$ by the law of total variance. Comparing to \cref{eq:Psi-opt} establishes the claim.
+\end{proof}
+
+\begin{remark}[PPI is dimension-stable]\label{rem:ppi-stable}
+The single-FOC, single-root structure of \cref{prop:ppi-foc} contrasts sharply with the linear-estimator critical-point analysis (\cref{lem:critical}), which required separate treatment of $\beta\le1/2$ and $\beta>1/2$. The reason is that the PPI variance $\Psi_n(x)$ is convex in $x$ on $(0,n)$, while the linear profiled risk $R_n(x)$ is not generically convex. Convexity of $\Psi_n$ comes from the bias-correction structure: the residual $\sigma_{\mathrm{irr}}^2+dx^{-2\gamma}$ is a positive convex function divided by $n-x$, which preserves quasi-convexity by elementary calculation.
+\end{remark}
+
+\begin{remark}[Plateau bias for PPI]\label{rem:ppi-plateau}
+Replacing \cref{asm:res-pl} by $\E[\Var_{P^*}(\tilde g^*(X)-\tilde g_x(X)\mid\mathcal{F}_C)]=d_\infty^2+dx^{-2\gamma}\{1+o(1)\}$ with $d_\infty^2>0$ (irreducible regression error from generator misspecification) yields $\E[\sigma_{\mathrm{ppi}}^2(x)]\ge\sigma_{\mathrm{irr}}^2+d_\infty^2$, and the FOC becomes $(\sigma_{\mathrm{irr}}^2+d_\infty^2)x^{2\gamma+1}+(2\gamma+1)dx=2\gamma dn$, with the same scaling $x_n^{\mathrm{PP}}\asymp n^{1/(2\gamma+1)}$ but a worse constant. The leading PPI risk becomes $v_n+(\sigma_{\mathrm{irr}}^2+d_\infty^2)/n$, still $O(1/n)$. \emph{PPI is robust to plateau-type misspecification: the rate is preserved, only the constant degrades.} This contrasts with the linear estimator, where plateau bias caps calibration at $O(1)$ regardless of $\beta$.
+\end{remark}
+
+\subsection{Asymptotic distribution and inference for PPI}
+\label{ssec:ppi-inference}
+
+\begin{proposition}[PPI is asymptotically normal and unbiased]\label{prop:ppi-clt}
+Under \cref{asm:al-synth,asm:res-pl} and the conditional Lindeberg condition for $\rho_x$, with $x=x_n^{\mathrm{PP}}$ from \cref{eq:xn-ppi},
+\begin{equation}\label{eq:ppi-clt}
+\frac{\hat\theta^{\mathrm{PP}}(x_n^{\mathrm{PP}})-\theta^*}{\sqrt{\Psi_n(x_n^{\mathrm{PP}})}}\;\Rightarrow\;N(0,1).
+\end{equation}
+A two-sided Wald interval centered at $\hat\theta^{\mathrm{PP}}$ with width $z_{1-\alpha/2}\sqrt{\widehat\Psi_n}$, where $\widehat\Psi_n=\hat v_n+n_v^{-2}\sum_{i\in V_x}(\rho_{\hat g_x}(W_i)-\bar\rho)^2$, has asymptotic coverage $1-\alpha$ for $\theta^*$ without any bias-rate conditions.
+\end{proposition}
+
+\begin{proof}
+By \cref{lem:ppi-decomp}, $\hat\theta^{\mathrm{PP}}-\theta^*=A+(B+C)$ with three zero-conditional-mean summands; $A\indep(B+C)\mid\mathcal{F}_C$. Each is an i.i.d.\ sum of mean-zero random variables (synthetic and real, respectively). Apply Lindeberg-Feller conditionally on $\mathcal{F}_C$ to obtain conditional asymptotic normality of $\sqrt{\Psi_n}^{-1}(A+B+C)\Rightarrow N(0,1)$. Unconditional convergence follows by dominated convergence after verifying $\E[\Psi_n^{-1}(\hat\theta^{\mathrm{PP}}-\theta^*)^2\mid\mathcal{F}_C]\to1$ in probability, which holds under \cref{asm:res-pl}. The plug-in variance estimator $\widehat\Psi_n$ is consistent under standard conditions on the sample analogues. The absence of bias-rate conditions follows because $\E[\hat\theta^{\mathrm{PP}}-\theta^*]=0$ exactly (under \cref{eq:tildeg}); see \cref{lem:ppi-decomp}.
+\end{proof}
+
+\section{Comparison and Decision Rule}
+\label{sec:compare}
+
+We collect the asymptotic risks of the three candidate estimators in the headline regime $\rho=1$. Let $a=\sigma_{\mathrm{irr}}^2+\sigma_{\mathrm{red}}^2$ where $\sigma_{\mathrm{red}}^2:=\Var_{P^*}(\tilde g^*(X))$ is the explainable variance.
+
+\begin{theorem}[Headline-regime comparison]\label{thm:compare}
+Under \cref{asm:al-real,asm:al-synth,asm:pl,asm:vn,asm:res-pl} with $\rho=1$:
+\begin{enumerate}[label=\rm(\roman*),leftmargin=*]
+\item All-real estimator: $\E[(\hat\theta_R-\theta^*)^2]=a/n+o(1/n)$.
+\item Linear-allocation estimator at oracle:
+\begin{equation*}
+R_n(x_n^\star)=\begin{cases}\dfrac{a}{n}-\Theta(n^{-2}) & \beta<1/2,\\[6pt]\dfrac{av_0}{(a+v_0)\,n}\{1+o(1)\} & \beta>1/2.\end{cases}
+\end{equation*}
+\item PPI estimator at oracle: $\Psi_n(x_n^{\mathrm{PP}})=(\sigma_{\mathrm{irr}}^2+v_0)/n\{1+o(1)\}$ for every $\gamma>0$.
+\end{enumerate}
+In particular, when $\beta>1/2$, the linear estimator strictly dominates PPI on first-order MSE:
+\begin{equation*}
+\frac{R_n(x_n^\star)}{\Psi_n(x_n^{\mathrm{PP}})}\;\to\;\frac{av_0/(a+v_0)}{\sigma_{\mathrm{irr}}^2+v_0}\;<\;1.
+\end{equation*}
+When $\beta<1/2$, the linear estimator achieves at most a constant-factor improvement over $a/n$, while PPI achieves the strictly better rate $\min(\sigma_{\mathrm{irr}}^2+v_0,a)/n$, which is strictly smaller iff $\sigma_{\mathrm{red}}^2>v_0$.
+\end{theorem}
+
+\begin{proof}
+(i)–(iii) restate \cref{thm:phase} (Regimes II, III) and \cref{thm:ppi-phase}(iii). For the comparison: $av_0/(a+v_0)<\min(a,v_0)$, the harmonic mean is strictly smaller than the smaller of the two arguments, while $\sigma_{\mathrm{irr}}^2+v_0\ge v_0\ge\min(a,v_0)$, hence $\sigma_{\mathrm{irr}}^2+v_0>av_0/(a+v_0)$ whenever $\sigma_{\mathrm{irr}}^2,v_0>0$.
+
+For Regime II: linear MSE is $a/n-\Theta(n^{-2})$, asymptotic constant $a$. PPI MSE constant is $\sigma_{\mathrm{irr}}^2+v_0$. PPI smaller iff $\sigma_{\mathrm{irr}}^2+v_0<a=\sigma_{\mathrm{irr}}^2+\sigma_{\mathrm{red}}^2$, i.e., $v_0<\sigma_{\mathrm{red}}^2$.
+\end{proof}
+
+\Cref{thm:compare} translates into the following decision rule.
+
+\begin{corollary}[When to use which estimator]\label{cor:decision}
+Under the regularity of \cref{thm:compare}:
+\begin{itemize}[leftmargin=*]
+\item If $\beta>1/2$ and inference is not required, use the linear estimator: it achieves a strictly better first-order MSE constant than PPI, and \cref{cor:wald} shows that bias is negligible relative to standard error so Wald inference is valid anyway.
+\item If $\beta\le1/2$ and the regression has nonzero predictive power ($\sigma_{\mathrm{red}}^2>v_0$), use PPI: it achieves a faster first-order rate than linear (which is capped at $a/n$), and inference is automatically valid.
+\item If valid coverage is the primary goal regardless of regime, use PPI: it is always asymptotically unbiased.
+\item If plateau-type misspecification is suspected, use PPI: it is rate-robust (\cref{rem:ppi-plateau}), while linear is not (\cref{prop:plateau}).
+\end{itemize}
+\end{corollary}
+
+\begin{remark}[Combined estimator]\label{rem:combined}
+A natural extension is the linear combination of the linear and PPI estimators with optimally chosen mixing weight. The combined risk equals the harmonic mean of the two component risks (under independence enforced by additional sample splitting), inheriting the better of the two rates. In the headline regime with $\beta>1/2$, the linear component dominates, so the combined estimator coincides with the linear estimator at first order. We omit details.
+\end{remark}
+
+\end{document}

@@ -50,14 +50,34 @@ def test_estimate_bias_curve_recovers_beta_in_clean_regime():
         synth_fn = make_synth_fn(p)
         fit = estimate_bias_curve(
             n=p.n, n_v=p.n // 5, X=X, synth_fn=synth_fn, rng=rng,
-            estimand=estimand_mean, m=p.m,
+            estimand=estimand_mean, m=p.m, reference="all", pilot_repeats=8,
         )
-        if np.isfinite(fit.beta_hat) and fit.beta_hat < 5.0:
+        if fit.fit_reliable:
             betas.append(fit.beta_hat)
     mean_beta = float(np.mean(betas))
     assert abs(mean_beta - beta_true) < 0.3, (
         f"mean β̂={mean_beta:.3f}, true β={beta_true}"
     )
+
+
+def test_zero_signal_bias_curve_is_unreliable_not_fast_learning():
+    """No positive pilot signal should fail closed, not imply β̂=5 and ĉ≈0."""
+    X = np.zeros(200)
+
+    def synth_fn(x, rng):
+        return np.array([0.0])
+
+    synth_fn.fast_mean = True
+    synth_fn.m = 10_000
+    synth_fn.sigma_s2 = 0.0
+
+    fit = estimate_bias_curve(
+        n=200, n_v=0, X=X, synth_fn=synth_fn, rng=make_rng(99),
+        estimand=estimand_mean, m=10_000, reference="all", pilot_repeats=4,
+    )
+    assert not fit.fit_reliable
+    assert fit.beta_hat == 0.0
+    assert fit.n_positive == 0
 
 
 @pytest.mark.parametrize("name", [
@@ -106,6 +126,25 @@ def test_adaptive_allocation_tracks_oracle_in_common_regime():
     assert 0.3 * oracle_x <= mean_x <= 3.0 * oracle_x, (
         f"mean x̂={mean_x:.1f} vs oracle x*={oracle_x}"
     )
+
+
+def test_adaptive_does_not_select_below_pilot_support():
+    """Regression test for catastrophic x=1 extrapolation from noisy pilots."""
+    n, beta, rho = 10000, 1.5, 1.0
+    p = GaussianParams(n=n, beta=beta, rho=rho, fast_mean=True)
+    truth_params = {"a": p.a, "v_n": p.v_n, "c": p.c, "beta": p.beta,
+                    "sigma_s2": p.sigma_s2, "B0": p.B0, "m": p.m}
+    min_pilot = int(default_pilot_grid(n).min())
+
+    for r in range(20):
+        rng = make_rng(replication_seed(17, "test_no_low_x", (n,), r))
+        X = sample_real(p, rng)
+        synth_fn = make_synth_fn(p)
+        res = get("corrected_adaptive_gn")(
+            X, synth_fn, n=n, rng=rng, truth_params=truth_params,
+            estimand=estimand_mean, config={},
+        )
+        assert res.x_selected == 0 or res.x_selected >= min_pilot
 
 
 def test_safe_fallback_activates_when_synthetic_useless():

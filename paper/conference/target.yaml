@@ -1,0 +1,8 @@
+name: conference
+venue: neurips
+template: neurips
+mode: blind
+page_limit: 8
+audience: ml
+format: double-column
+bibstyle: neurips

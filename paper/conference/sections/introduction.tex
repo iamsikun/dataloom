@@ -1,0 +1,31 @@
+% POLISHED
+\label{sec:intro}
+
+Large language models have made synthetic data cheap. A single generator can now produce millions of labeled examples, simulated outcomes, or auxiliary observations on demand \citep{kaplan2020scaling,hoffmann2022chinchilla}. This is valuable when real data are expensive, sensitive, slow to collect, or constrained by institutions. But abundance does not remove the empirical bottleneck: synthetic observations come from a model, and that model may preserve bias, misspecified structure, or distortions inherited from training and alignment. The central question is therefore not whether synthetic data can be generated, but how much scarce real data should be spent making them reliable.
+
+We study this question as a real-data allocation problem. A researcher wants to estimate a scalar parameter $\theta^\star$ of a real population, such as a treatment effect, a mean, or a regression coefficient, and has a budget of $n$ real observations. Each observation can be used as direct evidence about $\theta^\star$ or as calibration data that makes future synthetic draws less biased. Calibration improves the artificial data-generating process, but it also reduces the real sample left for direct estimation. This is a Neyman-style allocation problem \citep{neyman1934}, except the split is across uses of data rather than across strata.
+
+A tempting shortcut is to choose the calibration share as a fixed function of the bias-decay exponent. That shortcut misses a second force in the problem. Under a power-law squared-bias curve $b_2(x) \asymp c x^{-2\beta}$, where $x$ is the calibration size and $\beta$ is the bias-decay exponent, the synthetic estimator also has sampling variance $v_n=\sigma_S^2/m_n$. The relevant synthetic error is therefore $B_n(x)=v_n+cx^{-2\beta}$, not the bias term alone.
+
+Keeping this term changes the allocation logic. The researcher must ask whether one more calibration observation reduces synthetic error enough to justify the lost real-estimation precision. This marginal-value comparison yields the first-order condition
+\[
+  (v_n+c x^{-2\beta})^2 = 2\beta a c x^{-(2\beta+1)}.
+\]
+When the synthetic budget grows with the real budget, $m_n \asymp n^\rho$, and generator bias declines faster than the parametric rate, $\beta>1/2$, this condition often calls for sublinear calibration. In the leading case $m_n\asymp n$, the optimal calibration share goes to zero even though the number of calibration observations diverges. Positive fixed-share rules therefore over-calibrate in this regime.
+
+Existing literatures stop one step before the allocation problem created by synthetic data. Neyman allocation optimizes sampling across strata \citep{neyman1934,cochran1977}; here the split is across \emph{uses} of the same scarce real observations. Shrinkage and model-combination methods choose weights after estimators exist \citep{stein1956,jamesstein1961,hansen2007combination}; they do not decide how much real data should be spent making a biased synthetic estimator usable. Double machine learning and prediction-powered inference correct bias under fixed splitting rules \citep{chernozhukov2018doubleml,angelopoulos2023ppi,zrnic2024crosspp}; they do not supply the marginal-value condition for calibration itself. Transfer and auxiliary-data learning treat the outside source as given \citep{panyang2010transfer,bastani2021proxy,licaili2022transfer}, while neural scaling laws describe how models improve with data \citep{kaplan2020scaling,hoffmann2022chinchilla}. Our contribution is to turn these pieces into a real-data allocation theory: a corrected first-order condition, its phase diagram, and inference rules built on standard semiparametric machinery \citep{bickelklaassenritovwellner1993,vandervaart1998asymptotic}.
+
+Our contributions are as follows:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Corrected allocation condition.} For any interior optimum $x^\star$ of the profiled mean-squared error, the calibration size satisfies
+    $(v_n + c x^{-2\beta})^2 = 2\beta a c x^{-(2\beta+1)}$,
+    where $a$ is the real-estimator variance constant and $c x^{-2\beta}$ is squared synthetic bias. This condition keeps the synthetic-variance term omitted by fixed-share shortcuts.
+
+  \item \textbf{Phase diagram.} We characterize five allocation regimes indexed by the bias-decay exponent $\beta$ and the synthetic-budget exponent $\rho$. In the headline regime, $\beta>1/2$ and $0<\rho<\beta+1/2$, the optimal calibration size is $x_n^\star \asymp n^{2\rho/(2\beta+1)}$, so the share $\lambda_n^\star=x_n^\star/n$ vanishes. When $\rho=1$, this reduces to $x_n^\star \asymp n^{2/(2\beta+1)}$: even linear synthetic scale calls for sublinear real-data calibration.
+
+  \item \textbf{Adaptive implementation.} We give a grid estimator that learns the bias-decay curve on a held-out pilot grid, minimizes the corrected profiled risk over interior and boundary choices $x=0,n$, and applies the safety check $x \cdot B_n(x) < a$ before using synthetic data. Under uniform consistency of the pilot risk estimates, the adaptive estimator matches the oracle in relative risk.
+
+  \item \textbf{Inference and evidence.} We separate MSE-optimal point estimation from valid inference. The mixed estimator can reduce point risk while leaving enough residual synthetic bias to make naive Wald intervals undercover; validation debiasing restores coverage at a variance cost, in the spirit of double machine learning and prediction-powered inference \citep{chernozhukov2018doubleml,angelopoulos2023ppi}. Across roughly $10^7$ Monte Carlo replications, the corrected oracle attains MSE $0.535$ relative to all-real estimation in the headline cell, compared with $0.779$ for a fixed-share baseline. In Experiment~4, validation-debiased intervals raise worst-cell coverage from $0.855$ to $0.938$ at the nominal $0.95$ level.
+\end{itemize}
+
+The rest of the paper proceeds as follows. Section~\ref{sec:setup} introduces the setup and notation. Section~\ref{sec:mixing} derives the optimal-mixing identity and corrected first-order condition. Section~\ref{sec:phase} gives the phase diagram. Section~\ref{sec:adaptive} develops the adaptive algorithm and inference results. Section~\ref{sec:experiments} reports the simulations, and Section~\ref{sec:discussion} concludes.

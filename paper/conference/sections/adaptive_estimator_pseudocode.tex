@@ -1,0 +1,23 @@
+\label{app:algbox}
+
+\emph{The algorithm box below was moved from \Cref{ssec:adaptive} (formerly displayed inline in the main paper) to fit the 9-page main-content limit; it is reproduced here verbatim.}
+
+\begin{algorithm}[!h]
+\caption{Corrected adaptive Generalized-Neyman estimator.}
+\label{alg:adaptive}
+\begin{algorithmic}[1]
+\State \textbf{Input:} real sample $X_1,\dots,X_n$; calibratable generator $\mathcal{G}$; pilot grid $\mathcal{G}_{\mathrm{pilot}}$; full grid $\mathcal{G}_n^+:=\mathcal{G}_n\cup\{0,n\}$; number of folds $K$.
+\State Cross-fit split $[n]$ into $K$ folds; for each fold, allocate out-of-fold data into calibration-pilot, validation, and final-estimation slices. Loop over folds.
+\State Estimate $\hat a$ as the empirical variance of the influence-function values $\psi(X_i)$ on the out-of-fold slice.
+\For{each $x_j\in\mathcal{G}_{\mathrm{pilot}}$}
+  \State Calibrate $\mathcal{G}$ on $x_j$ pilot observations, draw $m_n$ synthetic points, compute $\hat\theta_S(x_j)$, and estimate $\hat v_n$ as the synthetic sample variance divided by $m_n$.
+  \State Validation-debias the squared bias: $\widehat{b^2}(x_j)=\bigl[(\hat\theta_S(x_j)-\hat\theta_R^V)^2-\widehat{\mathrm{Var}}(\hat\theta_S(x_j))-\widehat{\mathrm{Var}}(\hat\theta_R^V)\bigr]_+$, where $\hat\theta_R^V$ is the real estimator on the validation slice.
+\EndFor
+\State Fit a power law by ordinary least squares: $\log\widehat{b^2}(x_j)=\log\hat c-2\hat\beta\log x_j+\epsilon_j$.
+\State Form $\widehat{B}_n(x)=\hat v_n+\hat c\,x^{-2\hat\beta}$, $\widehat V_R(x)=\hat a/(n-x)$, and $\widehat R_n(x)=\widehat V_R(x)\widehat{B}_n(x)/[\widehat V_R(x)+\widehat{B}_n(x)]$ on $\mathcal{G}_n^+$, with $\widehat R_n(0)=\hat a/n$ and $\widehat R_n(n)=\widehat{B}_n(n)$.
+\State $\hat x_n\gets \argmin_{x\in\mathcal{G}_n^+}\widehat R_n(x)$.
+\State \textbf{Safety check:} if $\hat x_n\,\widehat{B}_n(\hat x_n)\ge\hat a$, return the all-real estimator $\hat\theta_R$.
+\State Otherwise set $\hat\alpha=\widehat{B}_n(\hat x_n)/[\widehat V_R(\hat x_n)+\widehat{B}_n(\hat x_n)]$ and return $\hat\theta=\hat\alpha\,\hat\theta_R(\hat x_n)+(1-\hat\alpha)\,\hat\theta_S(\hat x_n)$.
+\State \textbf{Output:} cross-fit average of $\hat\theta$ over the $K$ folds.
+\end{algorithmic}
+\end{algorithm}

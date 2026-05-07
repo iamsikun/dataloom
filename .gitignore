@@ -16,3 +16,16 @@ results/exp*__*/
 
 # Keep the summary report committed
 !results/full_run_summary.md
+
+# pepper:start
+paper/**/camera-ready/
+paper/**/submission/
+paper/**/*.aux
+paper/**/*.bbl
+paper/**/*.blg
+paper/**/*.fdb_latexmk
+paper/**/*.fls
+paper/**/*.log
+paper/**/*.out
+paper/**/*.synctex.gz
+# pepper:end

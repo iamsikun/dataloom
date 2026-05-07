@@ -155,19 +155,29 @@ def _adaptive_pipeline_causal(
     sigma_s2_hat = float(np.median(sigma_estimates))
     v_hat = sigma_s2_hat / m
     pos = bias2 > 0
-    if pos.sum() >= 2:
+    fit_reliable = True
+    if pos.sum() >= 3:
         log_x = np.log(pilot_grid[pos].astype(float))
         log_b2 = np.log(bias2[pos])
         slope, intercept = np.polyfit(log_x, log_b2, 1)
         beta_hat = float(-slope / 2.0)
         c_hat = float(np.exp(intercept))
+        if not np.isfinite(beta_hat) or not np.isfinite(c_hat) or beta_hat <= 0.60:
+            fit_reliable = False
     else:
-        beta_hat = 5.0
-        c_hat = max(float(bias2.max()), 1e-12)
+        beta_hat = 0.0
+        c_hat = max(a_hat, float(bias2.max()), 1e-12)
+        fit_reliable = False
 
     n_eff = n - n_v
+    grid = np.unique(np.concatenate([
+        [0],
+        np.arange(int(max(1, pilot_grid.min())), n_eff, dtype=int),
+        [n_eff],
+    ]))
     res = oracle_grid(n=n_eff, a=a_hat, v_n=v_hat,
-                      c=c_hat, beta=max(beta_hat, 1e-3))
+                      c=c_hat, beta=max(beta_hat, 1e-3),
+                      grid=grid, include_boundaries=False)
     return {
         "n_eff": n_eff, "n_v": n_v, "x_hat": res.x_star,
         "alpha_hat": res.alpha_star,
@@ -176,6 +186,7 @@ def _adaptive_pipeline_causal(
         "estimated_risk_selected": res.risk_star,
         "B_eff_hat": res.B_eff_star or float("inf"),
         "V_R_hat": res.V_R_star or (a_hat / n_eff),
+        "fit_reliable": fit_reliable,
     }
 
 
@@ -231,6 +242,14 @@ def _run_one(
     x_hat = sel["x_hat"]
     alpha = sel["alpha_hat"]
     n_eff = sel["n_eff"]
+
+    if name in ("corrected_adaptive_gn", "safe_corrected_adaptive_gn",
+                "validation_debiased_gn") and not sel["fit_reliable"]:
+        return {"method": name, "theta_hat": _ate_aipw(df_real),
+                "x_selected": 0, "alpha_selected": 1.0,
+                "beta_hat": sel["beta_hat"], "c_hat": sel["c_hat"],
+                "a_hat": sel["a_hat"], "v_hat": sel["v_hat"],
+                "fallback_used": True}
 
     if name == "fixed_half_split_plugin_alpha":
         x_hat = max(1, n // 2)

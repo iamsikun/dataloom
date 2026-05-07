@@ -1,0 +1,7 @@
+\label{sec:discussion}
+
+Synthetic data do not eliminate the value of real data. They make real data more strategic. The paper's main message is that scarce real observations have two competing roles: they are evidence for the estimand and inputs that improve the synthetic generator. Treating calibration as a fixed-share preprocessing step misses this trade-off. The correct allocation is governed by marginal value: one more real observation should be spent on calibration only when the reduction in synthetic error is worth the loss of direct real-estimation precision.
+
+This marginal-value logic changes the practical recommendation. In the central regime for modern synthetic-data pipelines, where synthetic samples scale with the real-data budget and generator bias declines quickly, the optimal calibration size grows but the calibration share vanishes. More synthetic scale does not mean spending a constant fraction of real data on calibration. It means using a growing, sublinear calibration set and preserving most real observations for direct estimation.
+
+The same distinction matters for uncertainty quantification. MSE-optimal synthetic augmentation can improve point estimation while leaving residual bias large enough to damage naive confidence intervals. Valid inference therefore requires an explicit bias correction or an allocation rule designed for coverage rather than point risk. The broader lesson is simple: synthetic data are useful only when they are allocated, weighted, and debiased with the real-data budget in view.

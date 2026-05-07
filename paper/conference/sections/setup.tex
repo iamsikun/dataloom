@@ -1,0 +1,74 @@
+\label{sec:setup}
+
+\paragraph{Estimand and observables.}
+Fix a probability space and a measurable sample space $\mathcal{X}$. Let $P^*$ be the real data-generating distribution. Let $\theta:\mathcal{P}\to\mathbb{R}$ be a scalar functional defined on a class $\mathcal{P}$ of distributions on $\mathcal{X}$ that contains $P^*$ and the synthetic distributions introduced below. The target is $\theta^*:=\theta(P^*)$. The researcher observes a real sample
+\begin{equation*}
+X_1,\dots,X_n \stackrel{\mathrm{iid}}{\sim} P^*,
+\end{equation*}
+where $n$ is the total real-data budget. The researcher chooses an integer calibration budget $x\in\{0,1,\dots,n\}$ and splits $[n]:=\{1,\dots,n\}$ into a \emph{calibration set} $C_x\subset[n]$ with $|C_x|=x$ and an \emph{estimation set} $E_x:=[n]\setminus C_x$ with $|E_x|=n_e:=n-x$. The calibration share is $\lambda := x/n\in[0,1]$. We enforce sample splitting throughout: estimators use only their assigned subsets, and the partition is independent of $\{X_i\}$. Let $\mathcal{F}_C := \sigma(\{X_i\}_{i\in C_x})$ denote the information in the calibration set. Intuitively, $C_x$ is the data the generator learns from, and $E_x$ is the data held back for direct estimation of $\theta^*$.
+
+\paragraph{Generator and synthetic estimator.}
+A \emph{calibration map} $\mathcal{G}$ takes the calibration sample $\{X_i\}_{i\in C_x}$ and produces a calibrated synthetic distribution $P_x$. Conditionally on $\mathcal{F}_C$, draw synthetic observations
+\begin{equation*}
+Z_1,\dots,Z_{m_n}\,\bigl|\,\mathcal{F}_C \stackrel{\mathrm{iid}}{\sim} P_x,
+\end{equation*}
+where $m_n\in\mathbb{N}$ is the synthetic budget. The \emph{pseudo-true} parameter is $\theta_x:=\theta(P_x)$, which is $\mathcal{F}_C$-measurable. The \emph{synthetic bias} is $b(x):=\theta_x-\theta^*$, with second moment $b_2(x):=\mathbb{E}[(\theta_x-\theta^*)^2]$. In words, $b(x)$ measures how far the calibrated generator remains from the real target; spending more real data on calibration should make $b_2(x)$ smaller.
+
+\paragraph{Asymptotic linearity.}
+We require the real and synthetic estimators to be $\sqrt{|E_x|}$- and $\sqrt{m_n}$-asymptotically linear, respectively.
+
+\begin{assumption}[Asymptotic linearity of the real estimator]\label{asm:al-real}
+There exists a measurable function $\psi:\mathcal{X}\to\mathbb{R}$ with $\mathbb{E}_{P^*}[\psi(X_1)]=0$ and $\mathrm{Var}_{P^*}(\psi(X_1))=a\in(0,\infty)$ such that, for every deterministic sequence of estimation subsets $E\subset[n]$ with $|E|\to\infty$,
+\begin{equation*}
+\hat\theta_R(E)-\theta^* \;=\; \frac{1}{|E|}\sum_{i\in E}\psi(X_i) \;+\; r_R(E),
+\end{equation*}
+where the remainder satisfies $\mathbb{E}[r_R(E)]=0$ and $\mathbb{E}[r_R(E)^2]=o(|E|^{-1})$.
+\end{assumption}
+
+\begin{assumption}[Asymptotic linearity of the synthetic estimator]\label{asm:al-synth}
+There exists a measurable family $(\phi_x)_{x\ge 1}$ such that, conditionally on $\mathcal{F}_C$,
+\begin{equation*}
+\hat\theta_S(x)-\theta_x \;=\; \frac{1}{m_n}\sum_{j=1}^{m_n}\phi_x(Z_j) \;+\; r_S(x),
+\end{equation*}
+with $\mathbb{E}[\phi_x(Z_1)\mid\mathcal{F}_C]=0$, $\mathrm{Var}(\phi_x(Z_1)\mid\mathcal{F}_C)=\sigma_S^2(x)$, $\mathbb{E}[r_S(x)\mid\mathcal{F}_C]=0$, and $\mathbb{E}[r_S(x)^2]=o(m_n^{-1})$. Furthermore there is a constant $\sigma_S^2<\infty$ such that $\mathbb{E}[\sigma_S^2(x)]\to\sigma_S^2$ uniformly across the regimes considered.
+\end{assumption}
+
+The function $\psi$ is the influence function of $\hat\theta_R$ and $a$ is its variance. Assumption \ref{asm:al-real} delivers the leading-order real-estimator variance
+\begin{equation*}
+V_R(x)\;:=\;\mathrm{Var}\bigl(\hat\theta_R(E_x)\bigr)\;=\;\frac{a}{n-x}\bigl\{1+o(1)\bigr\},
+\end{equation*}
+while Assumption \ref{asm:al-synth} gives $\mathrm{Var}(\hat\theta_S(x)\mid\mathcal{F}_C) = \sigma_S^2/m_n + o(m_n^{-1})$. We will write $V_R(x)=a/(n-x)$ and $\mathrm{Var}(\hat\theta_S(x)\mid\mathcal{F}_C) = \sigma_S^2/m_n$ throughout, absorbing the $o(\cdot)$ remainders into the $1+o(1)$ factors that multiply the leading-order risk.
+
+\paragraph{Working model.}
+The synthetic-error rate and the synthetic-variance rate are governed by two scalar exponents.
+
+\begin{assumption}[Power-law calibration]\label{asm:pl}
+There exist constants $c>0$ and $\beta>0$ such that
+\begin{equation*}
+b_2(x)\;=\;c\,x^{-2\beta}\bigl\{1+o(1)\bigr\}\qquad\text{as }x\to\infty.
+\end{equation*}
+\end{assumption}
+
+\begin{assumption}[Synthetic-variance regime]\label{asm:vn}
+There exist constants $v_0>0$ and $\rho\ge 0$ such that the synthetic sampling variance $v_n:=\sigma_S^2/m_n$ satisfies
+\begin{equation*}
+v_n\;=\;v_0\,n^{-\rho}\bigl\{1+o(1)\bigr\}\qquad\text{as }n\to\infty.
+\end{equation*}
+\end{assumption}
+
+Assumption~\ref{asm:pl} encodes the empirical power-law bias decay often seen in neural scaling-law studies; $\beta$ is the bias-decay exponent and $c$ is the scale. Assumption~\ref{asm:vn} encodes how quickly the synthetic budget grows with the real budget; the main scenario $m_n\asymp n$ corresponds to $\rho=1$. Combining the bias and variance pieces gives the \emph{effective synthetic error}
+\begin{equation*}
+B_n(x)\;:=\;v_n+c\,x^{-2\beta},
+\end{equation*}
+which is, up to a $1+o(1)$ factor, the unconditional MSE of $\hat\theta_S(x)$ around $\theta^*$. The first term, $v_n$, is Monte Carlo noise from drawing only $m_n$ synthetic observations. The second term, $c\,x^{-2\beta}$, is residual generator bias after calibration. The allocation problem is to reduce $B_n(x)$ by increasing $x$, while remembering that doing so leaves only $n-x$ real observations for direct estimation.
+
+\paragraph{Linear allocation estimator class.}
+For a mixing weight $\alpha\in[0,1]$ and calibration budget $x\in[0,n)$, the \emph{linear allocation estimator} is
+\begin{equation}\label{eq:linest}
+\hat\theta^{\mathrm{L}}(\alpha,x)\;:=\;\alpha\,\hat\theta_R(E_x)\;+\;(1-\alpha)\,\hat\theta_S(x).
+\end{equation}
+In words, $\hat\theta^{\mathrm{L}}$ is a convex combination of the real-only estimator on the held-out data and the synthetic-only estimator from the calibrated generator; the two corner cases $\alpha=1$ and $\alpha=0$ recover the all-real estimator on $E_x$ and the synthetic-only estimator, respectively. Section~\ref{sec:mixing} characterizes the optimal $(\alpha,x)$ pair under Assumptions~\ref{asm:al-real},~\ref{asm:al-synth}, ~\ref{asm:pl}, and~\ref{asm:vn}.
+
+
+% =====================================================================
+% POLISHED

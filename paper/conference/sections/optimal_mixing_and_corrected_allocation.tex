@@ -1,0 +1,77 @@
+\label{sec:mixing}
+
+This section solves the allocation problem in two steps. First, \Cref{ssec:mixing} fixes the calibration budget $x$ and chooses the best mixing weight $\alpha$ between the real and synthetic estimators. This gives a one-dimensional risk curve $R_n(x)$. Second, \Cref{ssec:foc} differentiates that curve with respect to $x$ and gives the corrected first-order condition. The difference from the usual heuristic is one retained term, the synthetic sampling variance $v_n$, and that term drives the phase diagram in \Cref{sec:phase}. Finally, \Cref{ssec:safe} gives a finite-sample safety check for falling back to all-real estimation. All proofs are deferred to Appendix~\ref{app:proofs}.
+
+\subsection{Optimal mixing for fixed allocation}\label{ssec:mixing}
+
+We first compute the leading-order MSE of the linear allocation estimator and minimize it over the mixing weight. Throughout, $\hat\theta^{\mathrm{L}}(\alpha,x)$ is as in \cref{eq:linest}, $V_R(x)=a/(n-x)$, and $B_n(x)=v_n+cx^{-2\beta}$.
+
+\begin{lemma}[Working MSE]\label{lem:mse-decomp}
+  Under Assumptions~\ref{asm:al-real}, ~\ref{asm:al-synth} and ~\ref{asm:pl},
+  \begin{equation*}
+    \mathbb{E}\bigl[(\hat\theta^{\mathrm{L}}(\alpha,x)-\theta^*)^2\bigr]
+    \;=\;\alpha^2\,V_R(x)\;+\;(1-\alpha)^2\,B_n(x)\;+\;o\bigl(V_R(x)\bigr)+o\bigl(B_n(x)\bigr),
+  \end{equation*}
+  uniformly in $\alpha\in[0,1], x\in (0,n)$.
+\end{lemma}
+
+In words, sample-splitting makes $\hat\theta_R(E_x)$ and $\hat\theta_S(x)$ unconditionally independent, so the cross term in the squared error vanishes and the MSE decomposes additively. The first term is the variance contribution from the real estimator, downweighted by $\alpha^2$; the second is the unconditional MSE of the synthetic estimator around $\theta^*$, downweighted by $(1-\alpha)^2$.
+
+Minimizing the leading-order MSE in $\alpha$ for fixed $x$ is a one-dimensional convex problem and admits a closed-form solution.
+
+\begin{proposition}[Optimal mixing weight and profiled risk]\label{prop:mix}
+  Fix $x\in(0,n)$ such that $0<B_n(x)<\infty$. Then the unique minimizer of $\alpha\mapsto \overline{\mathrm{MSE}}_n(\alpha,x)$ over $\alpha\in[0,1]$, where $\overline{\mathrm{MSE}}_n(\alpha,x) := \alpha^2 V_R(x)+(1-\alpha)^2 B_n(x),$ is
+  \begin{equation}\label{eq:alpha-star}
+    \alpha^*(x)
+    =
+    \frac{B_n(x)}{V_R(x)+B_n(x)}
+    \in(0,1).
+  \end{equation}
+  The corresponding profiled risk is
+  \begin{equation}\label{eq:Rn}
+    R_n(x)
+    :=
+    \overline{\mathrm{MSE}}_n(\alpha^*(x),x)
+    =
+    \frac{V_R(x)B_n(x)}{V_R(x)+B_n(x)}
+    =
+    \frac{aB_n(x)}{a+(n-x)B_n(x)}.
+  \end{equation}
+\end{proposition}
+
+The formula has a simple reading. If $B_n(x)$ is large relative to $V_R(x)$, the synthetic estimator is unreliable, so the optimal rule puts most weight on real data ($\alpha^*\to 1$). If $B_n(x)$ is small, the synthetic estimator is accurate, so it gets most of the weight ($\alpha^*\to 0$). The profiled risk $R_n(x)$ is the usual inverse-variance pooling risk for two independent estimators, with $B_n(x)$ playing the role of the synthetic estimator's effective error. The remaining problem is to choose the calibration budget $x$ that minimizes this profiled risk.
+
+\subsection{Exact corrected first-order condition}\label{ssec:foc}
+
+The fixed-share shortcut used as a baseline treats the synthetic estimator as if its only error were calibration bias. In our notation, it differentiates a risk surrogate after replacing $B_n(x)=v_n+cx^{-2\beta}$ by $cx^{-2\beta}$. Dropping $v_n$ is harmless only when synthetic sampling variance is negligible at the relevant allocation. It is not harmless when the synthetic budget $m_n$ grows with $n$, because $v_n$ then enters the marginal value of one more calibration observation. Keeping this term produces a different first-order condition, one that leads to the phase transition in \Cref{sec:phase} rather than a rate-independent fixed-share rule such as $\lambda=2\beta/(1+2\beta)$.
+
+\begin{proposition}[Exact first-order condition]\label{prop:foc}
+  Under Assumption~\ref{asm:pl} and~\ref{asm:vn} with $v_n>0$, every interior critical point $x\in(0,n)$ of $R_n$ satisfies
+  \begin{equation}\label{eq:foc}
+    \bigl(v_n+c\,x^{-2\beta}\bigr)^2\;=\;2\beta\,a\,c\,x^{-(2\beta+1)},
+  \end{equation}
+  or equivalently, after multiplying through by $x^{2\beta+1}$,
+  \begin{equation}\label{eq:foc-poly}
+    v_n^2\,x^{2\beta+1}\;+\;2c\,v_n\,x\;+\;c^2\,x^{1-2\beta}\;=\;2\beta\,a\,c.
+  \end{equation}
+  For $\beta\le 1/2$ this equation has at most one solution on $(0,\infty)$; for $\beta>1/2$ it has at most two, and the active interior root is the larger.
+\end{proposition}
+
+The left-hand side of \cref{eq:foc} is $B_n(x)^2$, the squared effective synthetic error. The right-hand side is the cost, in real-estimator precision, of spending one more real observation on calibration. Thus the optimum balances synthetic-error reduction against real-data loss. The mixed term $2cv_n\,x$ in \cref{eq:foc-poly} is the piece lost when one drops synthetic sampling variance; keeping it is the algebraic content of the correction. The root structure is controlled by the auxiliary function $\Phi(x):=B_n(x)^2 x^{2\beta+1}$, which is monotone for $\beta\le 1/2$ and U-shaped for $\beta>1/2$. \Cref{sec:phase} turns that shape into the allocation phase diagram.
+
+\subsection{Safe-improvement condition}\label{ssec:safe}
+
+The corrected FOC characterizes interior optima of $R_n$, but the global oracle is taken over the closed interval $[0,n]$, so the boundary $x=0$ (no calibration, all-real estimator on $n$ observations, with risk $a/n$) must be compared against any interior candidate. The next result reduces this comparison to a one-line algebraic check.
+
+\begin{proposition}[Exact safe-improvement condition]\label{prop:safe}
+  For every $x\in(0,n)$,
+  \begin{equation}\label{eq:safe}
+    R_n(x)\;<\;\frac{a}{n}\quad\Longleftrightarrow\quad x\,B_n(x)\;<\;a.
+  \end{equation}
+  Equivalently, $x\,(v_n+cx^{-2\beta})<a$. The boundary risk is $R_n(0)=a/n$.
+\end{proposition}
+
+In words, calibration budget $x$ beats all-real estimation on $n$ observations exactly when $x\,B_n(x)<a$. The product $x\,B_n(x)$ compares the amount of real data spent on calibration with the remaining error of the calibrated synthetic estimator. If the inequality fails because $v_n$ is too large or because the bias term $cx^{-2\beta}$ would require too much calibration to shrink, the procedure returns the all-real estimator, $\hat x=0$, $\hat\alpha=1$. \Cref{ssec:foc} produces candidate interior optima; \cref{eq:safe} decides whether any candidate should be used. The adaptive procedure in \Cref{sec:adaptive} minimizes $R_n(x)$ on a grid that includes $x=0$ and $x=n$, then applies this safety check.
+
+% =====================================================================
+% POLISHED

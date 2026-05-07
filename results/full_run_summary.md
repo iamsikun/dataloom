@@ -1,120 +1,138 @@
-# Full-Run Summary: Exp 1 + Exp 2 (fast-mean path, corrected naive_pooling)
+# Cleaned Full-Profile Result Summary
 
 **Date:** 2026-05-03  
-**Commit:** `00d9cfb` on branch `agent/full-exp1-exp2-fast-mean`  
-**Exp 1 run dir:** `results/exp1_phase_diagram__00d9cfb__20260503T093440__dirty`  
-**Exp 2 run dir:** `results/exp2_adaptive__00d9cfb__20260503T094340__dirty`  
-**Wall clock:** Exp 1 ≈ 9 min, Exp 2 ≈ 2 min (fast_mean=True; without this, rho=2 cells would be ~3 GB/call and intractable)
+**Branch:** `main`  
+**Current code:** `0c52efa` with dirty working-tree estimator, inference, and generator fixes  
+**Notebook:** `notebooks/exp_analysis.ipynb` re-executed after full-profile reruns
 
-> **Note on previous run in this branch:** An earlier run (`df6d462__20260503T071839`) used the same fast-mean path but with a bug in `naive_pooling`: when `fast_mean=True` the synth closure returns a length-1 array, but the old code did `np.concatenate([X[est_idx], Z])` and then `np.mean`, which gave essentially real-only MSE (weight ≈ 1/n_e on the synthetic). The correct formula, `(n_e·θ̂_R + m·θ̂_S)/(n_e+m)`, uses `m = truth_params["m"]` and is implemented in this run. The summary below reflects the **corrected** run.
+## Retained Runs
 
----
+| experiment | run directory | profile | raw rows | failures |
+|---|---|---:|---:|---:|
+| Exp 1 phase diagram | `results/exp1_phase_diagram__0c52efa__20260503T192214__dirty` | full | 9,996,000 | 0 |
+| Exp 2 adaptive | `results/exp2_adaptive__0c52efa__20260503T190454__dirty` | full | 1,155,000 | 0 |
+| Exp 3 multichannel | `results/exp3_multichannel__0c52efa__20260503T200030__dirty` | full | 48,000 | 0 |
+| Exp 4 inference | `results/exp4_inference__0c52efa__20260503T200321__dirty` | full | 280,000 | 0 |
+| Exp A tabular | `results/expA_tabular__0c52efa__20260503T200908__dirty` | full | 72,000 | 0 |
+| Exp B causal | `results/expB_causal__0c52efa__20260503T202616__dirty` | full | 14,400 | 0 |
 
-## What ran / what didn't
+Removed during cleanup: old smoke-profile Exp 3/4/A/B directories, stale adaptive reruns, and the interrupted Exp A attempt that exposed the Gaussian-copula robustness issue.
 
-**Exp 1 (phase diagram):** All 336 (n, β, ρ) cells completed. Zero `failure_flag=True` rows out of 9,996,000. Replications: 5,000 for n ≤ 5,000; 2,000 for n > 5,000.
+## Fixes Found During Full Rerun
 
-**Exp 2 (adaptive allocation):** All 90 (n, β, ρ) cells completed. Zero `failure_flag=True` rows out of 1,155,000. Replications: 2,000 for n ≤ 5,000; 1,000 for n > 5,000.
+- Exp 4 interval estimators still used the old validation-reference bias-curve call with `n_v=0`. The inference adaptive selector now uses the same corrected bias-curve defaults as the adaptive point estimators, and `ci_validation_debiased` explicitly reserves validation data.
+- Exp A full uses `gaussian_copula`; tiny or rank-deficient calibration samples could make the empirical correlation matrix non-positive-definite. The generator now eigenvalue-clips and regularizes the correlation matrix.
 
-No NaN `theta_hat` values in either run. No generator failures.
+## Main Takeaway
 
----
+The full-profile results are consistent with the paper for the corrected oracle and multichannel oracle stories. The adaptive estimator is now conservative and stable, but the finite-sample results still do not support a strong claim that adaptive tracks oracle performance. In tabular and causal full profiles, the corrected adaptive methods mostly fall back or mildly underperform the real-only baseline.
 
-## Empirical vs theory slopes — Exp 1 Table S1
+## Exp 1: Phase Diagram
 
-Theory slope in the `sublinear_fast_learning` regime: `slope = 2ρ/(1 + 2β)`.
+Headline cell: `beta=1.0`, `rho=1.0`, `n=20000`.
 
-| β | ρ | regime | theory\_slope | empirical\_slope | slope\_se | verdict |
-|---|---|--------|:---:|:---:|:---:|---|
-| 0.75 | 0.5 | sublinear\_fast\_learning | 0.400 | 0.4534 | 0.0063 | **(disagrees)** +8.5σ |
-| 0.75 | 1.0 | sublinear\_fast\_learning | 0.800 | 0.8422 | 0.0033 | **(disagrees)** +13σ |
-| 1.00 | 0.5 | sublinear\_fast\_learning | 0.333 | 0.3749 | 0.0109 | borderline +3.8σ |
-| 1.00 | 1.0 | sublinear\_fast\_learning | 0.667 | 0.6841 | 0.0031 | **(disagrees)** +5.5σ |
-| 1.50 | 0.5 | sublinear\_fast\_learning | 0.250 | 0.2504 | 0.0060 | agrees |
-| 1.50 | 1.0 | sublinear\_fast\_learning | 0.500 | 0.5045 | 0.0018 | agrees |
-| 1.50 | 1.5 | sublinear\_fast\_learning | 0.750 | 0.7516 | 0.0009 | agrees |
-| 2.00 | 0.5 | sublinear\_fast\_learning | 0.200 | 0.2036 | 0.0135 | agrees |
-| 2.00 | 1.0 | sublinear\_fast\_learning | 0.400 | 0.4044 | 0.0033 | agrees |
-| 2.00 | 1.5 | sublinear\_fast\_learning | 0.600 | 0.5986 | 0.0007 | agrees |
-| 2.00 | 2.0 | sublinear\_fast\_learning | 0.800 | 0.7995 | 0.0008 | agrees |
+| estimator | MSE ratio to real | oracle regret |
+|---|---:|---:|
+| `corrected_oracle_gn` | 0.535 | 0.000 |
+| `safe_corrected_oracle_gn` | 0.540 | 0.010 |
+| `naive_pooling` | 0.709 | 0.325 |
+| `fixed_half_split_oracle_alpha` | 0.710 | 0.328 |
+| `old_fixed_share_oracle_alpha` | 0.779 | 0.457 |
+| `real_only_all` | 1.000 | 0.870 |
+| `synthetic_only_full_calibration` | 1.015 | 0.898 |
 
-Boundary/degenerate cells (rho=0: persistent variance x\*=0; boundary\_full\_calibration: x\*=n; knife-edge β=0.5 or boundary β=1.0 ρ=1.5): no interior slope is measurable; these are omitted from the table.
+The corrected oracle cuts MSE by roughly 46.5% versus real-only in the headline fast-learning cell. Allocation-scaling has 4 disagreements among interior fast-learning cells, all upward and concentrated near the slow-learning boundary: `(0.75, 0.5)`, `(0.75, 1.0)`, `(1.0, 0.5)`, `(1.0, 1.0)`.
 
-**Theory vs empirical disagreements (4 of 11 interior cells, all upward-biased):**
+## Exp 2: Adaptive Estimator
 
-Theory predicts slope `2ρ/(1+2β)` asymptotically. Empirically, low-β cells (β ∈ {0.75, 1.0}) show slopes 3–13% above theory, while high-β cells (β ≥ 1.5) agree. All disagreements are positive (empirical > theory). Possible causes: (A) pre-asymptotic finite-n effects — the approach to the asymptotic slope is slower for β close to the slow-learning boundary; (B) the n-grid [100, 20000] is insufficient dynamic range to observe the asymptotic slope for these β values. Whether the excess is pre-asymptotic or a model misspecification cannot be determined from this grid alone; extending n to 10⁵–10⁶ would be required.
+Non-`rho=0` harm counts after the adaptive fix:
 
----
+| method | cells with MSE ratio > 1 | median MSE ratio | max MSE ratio |
+|---|---:|---:|---:|
+| `corrected_adaptive_gn` | 21 / 60 | 0.986 | 1.460 |
+| `safe_corrected_adaptive_gn` | 22 / 60 | 0.983 | 1.453 |
+| `adaptive_parametric_foc` | 29 / 60 | 1.000 | 1.432 |
+| `adaptive_nonparametric_grid` | 44 / 60 | 1.152 | 1.834 |
 
-## Headline regime MSE ratios — Exp 1 Table S2
+Headline adaptive cell: `beta=1.0`, `rho=1.0`, `n=10000`.
 
-**Cell: β=1.0, ρ=1.0, n=20,000 (sublinear\_fast\_learning, 2,000 replications)**
+| method | MSE ratio to real | oracle regret | mean x selected | oracle x |
+|---|---:|---:|---:|---:|
+| `safe_corrected_oracle_gn` | 0.504 | -0.034 | 573 | 573 |
+| `corrected_oracle_gn` | 0.522 | 0.000 | 573 | 573 |
+| `corrected_adaptive_gn` | 0.867 | 0.663 | 563 | 573 |
+| `adaptive_parametric_foc` | 0.874 | 0.675 | 560 | 573 |
+| `safe_corrected_adaptive_gn` | 0.908 | 0.741 | 577 | 573 |
+| `real_only_all` | 1.000 | 0.917 | 0 | 573 |
+| `adaptive_nonparametric_grid` | 1.136 | 1.177 | 137 | 573 |
 
-| estimator | MSE | mse\_ratio\_to\_real | oracle\_regret |
-|---|:---:|:---:|:---:|
-| corrected\_oracle\_gn | 2.60e-05 | 0.535 | 0.000 |
-| safe\_corrected\_oracle\_gn | 2.62e-05 | 0.540 | 0.010 |
-| naive\_pooling | 3.43e-05 | 0.709 | 0.325 |
-| fixed\_half\_split\_oracle\_alpha | 3.44e-05 | 0.710 | 0.328 |
-| old\_fixed\_share\_oracle\_alpha | 3.77e-05 | 0.779 | 0.457 |
-| real\_only\_all | 4.83e-05 | 1.000 | 0.870 |
-| synthetic\_only\_full\_calibration | 4.90e-05 | 1.015 | 0.898 |
+Adaptive is much better than the pre-fix catastrophic run, but it is not oracle-equivalent on the retained grid.
 
-Key findings: `corrected_oracle_gn` achieves 46.5% MSE reduction vs real-only, confirming the theoretical improvement. `old_fixed_share_oracle_alpha` over-calibrates (oracle_regret 0.457 vs 0.000 for oracle), consistent with theory. `synthetic_only_full_calibration` is slightly worse than real_only (residual bias even at full calibration).
+## Exp 3: Multichannel
 
-**Note on `safe_corrected_oracle_gn` negative oracle_regret (78 cells across the full grid):** The safe variant records oracle_regret < 0 in 78/2352 cells (i.e., it beats the unsanitized oracle in MC MSE). This is expected behavior, not a bug: when the safety condition `x*·B(x*) < a` fails, the safe variant falls back to real_only_all. The oracle benchmark is not safety-aware, so the safe variant can occasionally improve on it.
+Full-profile median MSE ratio to corrected multichannel oracle:
 
----
+| method | median ratio | max ratio |
+|---|---:|---:|
+| `corrected_multichannel_oracle` | 1.000 | 1.000 |
+| `best_single_channel_oracle` | 1.147 | 1.666 |
+| `equal_split_two_channels` | 1.493 | 1.745 |
+| `old_multichannel_fixed_share` | 2.240 | 3.217 |
 
-## Adaptive vs oracle — Exp 2 Table A2
+No full-profile cell beats the corrected multichannel oracle in Monte Carlo MSE.
 
-**Cell: β=1.0, ρ=1.0, n=10,000 (largest n with genuine fast-learning, 1,000 replications)**
+## Exp 4: Inference
 
-| method | mse\_ratio\_to\_real | oracle\_regret | safe\_fallback\_rate |
-|---|:---:|:---:|:---:|
-| corrected\_oracle\_gn (benchmark) | 0.522 | 0.000 | 0.0 |
-| safe\_corrected\_oracle\_gn | 0.504 | −0.034 | 0.0 |
-| corrected\_adaptive\_gn | 0.641 | 0.230 | 0.0 |
-| safe\_corrected\_adaptive\_gn | 0.702 | 0.346 | 0.0 |
-| adaptive\_parametric\_foc | 0.832 | 0.595 | 0.0 |
-| adaptive\_nonparametric\_grid | 1.177 | 1.256 | 0.0 |
-| real\_only\_all (baseline) | 1.000 | 0.917 | — |
+Full-profile coverage ranges by interval method:
 
-Safe fallback rate in the persistent-variance regime (β=1.0, ρ=0.0, n=10,000): `safe_corrected_adaptive_gn` falls back 94.6% of replications, as expected.
+| interval | min | median | max |
+|---|---:|---:|---:|
+| `ci_gn_naive` | 0.855 | 0.916 | 0.955 |
+| `ci_gn_bias_aware` | 0.896 | 0.930 | 0.957 |
+| `ci_gn_undersmoothed` | 0.913 | 0.936 | 0.955 |
+| `ci_real_only` | 0.938 | 0.949 | 0.956 |
+| `ci_validation_debiased` | 0.938 | 0.953 | 0.964 |
 
----
+The ranking is consistent with the paper's inference warning: naive GN undercovers most, bias-aware/undersmoothed improves, and validation-debiased is closest to nominal in median coverage.
 
-## Unfavorable results — adaptive methods substantially underperform oracle
+## Exp A: Tabular
 
-> **The findings below contradict the paper's Phase-3 claim that adaptive methods should track the oracle. They are reported as observed, not suppressed.**
+Full-profile tabular summary:
 
-The adaptive estimators are worse than `real_only_all` (mse\_ratio\_to\_real > 1) in a large majority of non-persistent-variance cells:
+| method | cells | median MSE ratio | max MSE ratio | harmful cells | mean fallback |
+|---|---:|---:|---:|---:|---:|
+| `corrected_adaptive_gn` | 45 | 1.000 | 1.000 | 0 | 1.000 |
+| `safe_corrected_adaptive_gn` | 45 | 1.000 | 1.000 | 0 | 1.000 |
+| `validation_debiased_gn` | 45 | 1.000 | 1.000 | 0 | 1.000 |
+| `old_fixed_share_plugin_alpha` | 36 | 1.294 | 1.501 | 36 | 0.000 |
+| `fixed_half_split_plugin_alpha` | 45 | 3.519 | 4.316 | 45 | 0.000 |
+| `naive_pooling` | 45 | 5.439 | 117.166 | 45 | 0.000 |
+| `synthetic_only_full_calibration` | 45 | 8.874 | 141.827 | 45 | 0.000 |
 
-| method | cells with mse\_ratio > 1 (out of 60 non-rho=0 cells) |
-|---|:---:|
-| adaptive\_nonparametric\_grid | 60 / 60 |
-| adaptive\_parametric\_foc | 55 / 60 |
-| safe\_corrected\_adaptive\_gn | 55 / 60 |
-| corrected\_adaptive\_gn | 54 / 60 |
+The corrected adaptive methods avoid harm by falling back to real-only in every full-profile tabular cell. That is stable, but it is not positive evidence that synthetic augmentation helps in this setting.
 
-For comparison: `corrected_oracle_gn` has 0 / 60 such cells.
+## Exp B: Causal
 
-Worst observed cases:
-- `adaptive_nonparametric_grid`, β=1.5, ρ=2.0, n=1000: mse\_ratio=**307**, oracle\_regret=314,028, harm\_rate=1.0. Mean x_selected=12.8 vs oracle x\*=1,000.
-- `corrected_adaptive_gn`, β=1.5, ρ=2.0, n=1000: mse\_ratio=**204**, oracle\_regret=204,177. Mean x_selected=124.6 vs oracle x\*=1,000.
-- `adaptive_nonparametric_grid`, β=1.0, ρ=2.0, n=200: mse\_ratio=**68**.
+Full-profile causal summary, using `real_only_aipw` as the baseline:
 
-**What the simulation shows:** Across this grid, adaptive estimators consistently underestimate x\* — mean x\_selected is far below oracle x\* in most cells — leading to under-calibration and excess bias. The oracle (`corrected_oracle_gn`) works correctly in all 60 cells.
+| method | cells | median MSE ratio | max MSE ratio | harmful cells | mean fallback |
+|---|---:|---:|---:|---:|---:|
+| `safe_corrected_adaptive_gn` | 8 | 1.084 | 1.181 | 8 | 0.811 |
+| `corrected_adaptive_gn` | 8 | 1.086 | 1.241 | 8 | 0.783 |
+| `synthetic_only_full_calibration` | 8 | 1.276 | 1.642 | 8 | 0.000 |
+| `validation_debiased_gn` | 8 | 1.459 | 1.889 | 8 | 0.770 |
+| `naive_pooling` | 8 | 1.679 | 2.122 | 8 | 0.000 |
+| `old_fixed_share_plugin_alpha` | 8 | 1.760 | 2.264 | 8 | 0.000 |
+| `fixed_half_split_plugin_alpha` | 8 | 2.277 | 4.075 | 8 | 0.000 |
+| `real_only_diff_in_means` | 8 | 5.415 | 15.472 | 8 | 0.000 |
 
-**Root-cause analysis (observational):** The pilot bias-curve estimator requires the squared deviation `(θ̂_S(x_j) − θ̂_R^V)²` to exceed the sum of variances `σ²_s/m + a/n_v` to produce a positive bias² estimate. For high ρ (large m), `σ²_s/m ≈ 0`, but `a/n_v = O(1/n)` dominates at small n where the bias `B₀·x_j^{-β}` is also small. Consequently, most pilot points yield bias²=0, the power-law fit falls back to the degenerate β_hat=5/c_hat≈0 defaults, and the adaptive selector picks a much smaller x than optimal. This is a fundamental signal-to-noise limitation of the pilot protocol at these sample sizes — it is not a crash, NaN propagation, or implementation error.
+The causal full profile is not favorable for synthetic augmentation. Corrected adaptive is the least harmful synthetic method, but it is still worse than `real_only_aipw` in all 8 cells.
 
-**Theory says:** Adaptive methods track oracle as n → ∞ (experiments.md §5.6). **Empirical:** On this grid (n ∈ [200, 10000]), none of the four adaptive methods consistently achieves mse\_ratio < 1 in the fast-learning regime. The gap does not clearly close across n (e.g., `adaptive_nonparametric_grid` at β=0.75, ρ=1: mse_ratio goes 10.2 → 5.1 → 1.8 → 1.3 → 1.2 → 1.2 for n = 200, 500, 1000, 2000, 5000, 10000 — still above 1 at n=10000). Whether asymptotic convergence holds but kicks in beyond n=10,000 is not ruled out by these results; however, the paper should state this clearly rather than claim n=10,000 as evidence of convergence.
+## Consistency With Paper Claims
 
----
+- Supported: corrected oracle allocation improves over real-only and old fixed-share rules in the fast-learning regime.
+- Supported: corrected multichannel oracle dominates single-channel, equal-split, and old fixed-share baselines in the full profile.
+- Supported with caveat: inference methods follow the expected ordering, with naive GN undercoverage and validation-debiased intervals closest to nominal.
+- Partially supported: adaptive allocation is stable and no longer catastrophically under-calibrates.
+- Not supported as a finite-sample claim: adaptive methods do not consistently track oracle performance, and full-profile Exp A/B do not show synthetic augmentation improving over the strongest real-only baselines.
 
-## Data integrity notes
-
-- Zero `failure_flag=True` rows in both runs.
-- Zero NaN `theta_hat` values.
-- All configured estimators produced valid `EstimatorResult` for every replication.
-- Raw parquet files are retained under `results/exp*__*/raw/` (not committed per task constraints).

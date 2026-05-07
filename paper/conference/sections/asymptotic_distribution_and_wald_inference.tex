@@ -1,0 +1,27 @@
+\label{app:wald}
+
+\emph{This subsection was moved from the main paper (formerly Section~5.3) to fit the 9-page content limit; it is reproduced here verbatim.}
+
+A low-MSE point estimator does not automatically give a valid confidence interval. The same residual bias that the corrected oracle tolerates in mean square appears as an additive shift in the centered limit law. The next two results make that shift explicit.
+
+\begin{proposition}[Centered asymptotic normality]\label{prop:clt}
+Under Assumptions~\ref{asm:al-real},~\ref{asm:al-synth},~\ref{asm:pl}, and~\ref{asm:vn} with $v_n>0$ and a conditional Lindeberg condition on $\psi$ and $\phi_x$, the linear estimator at the oracle satisfies
+\begin{equation}\label{eq:clt}
+  \frac{\hat\theta^{\mathrm{L}}(\alpha^*(x_n^\star),x_n^\star)-\theta^*-(1-\alpha^*(x_n^\star))\,\Delta(x_n^\star)}{\sqrt{\Omega_n(x_n^\star)}}\;\Rightarrow\;N(0,1),
+\end{equation}
+conditionally on $\mathcal{F}_C$ and unconditionally, where $\Omega_n(x):=\alpha^*(x)^2 V_R(x)+(1-\alpha^*(x))^2 v_n$ is the stochastic-variance contribution and $\Delta(x):=\theta_x-\theta^*$ is the calibration-side bias. Replacing oracle quantities by their estimates from Theorem~\ref{thm:adaptive} preserves the CLT.
+\end{proposition}
+
+In plain English, the estimator is asymptotically normal around a shifted center, $\theta^*+(1-\alpha^*(x_n^\star))\,\Delta(x_n^\star)$, not necessarily around $\theta^*$. The shift is the synthetic weight times the remaining calibration bias. It matters for inference only when it is large relative to the standard error.
+
+\begin{corollary}[Wald inference around $\theta^*$]\label{cor:wald}
+A two-sided Wald interval centered at $\hat\theta^{\mathrm{L}}$ with width $z_{1-\alpha/2}\sqrt{\Omega_n(x_n^\star)}$ has asymptotic coverage $1-\alpha$ for $\theta^*$ if and only if
+\begin{equation}\label{eq:wald-cond}
+  (1-\alpha^*(x_n^\star))\,\Delta(x_n^\star)\;=\;o_p\bigl(\sqrt{\Omega_n(x_n^\star)}\bigr).
+\end{equation}
+Under Theorem~\ref{thm:phase}, in Regime~III with $\rho=1$ and $\beta>1/2$, condition Eq.~\ref{eq:wald-cond} holds; in Regime~V with $\rho=1$ and $\beta=1/2$ it generically fails.
+\end{corollary}
+
+In Regime~III, calibration is fast enough that $\Delta(x_n^\star)$ is of order $n^{-2\beta/(2\beta+1)}=o(n^{-1/2})$, smaller than the standard error $\sqrt{\Omega_n}\asymp n^{-1/2}$. Naive Wald intervals are therefore asymptotically valid in that regime, though finite samples can still show undercoverage. In the parametric knife-edge Regime~V, $\Delta(x_n^\star)$ and $\sqrt{\Omega_n}$ are the same order, and the shift in Eq.~\ref{eq:clt} produces undercoverage that does not vanish with $n$. In such cases, the validation-debiased construction of a PPI-type estimator subtracts an estimate of $\Delta(x_n^\star)$ using the held-out validation slice and restores nominal coverage at the cost of a constant-factor variance penalty.
+
+% POLISHED

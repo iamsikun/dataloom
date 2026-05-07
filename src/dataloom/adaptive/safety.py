@@ -12,7 +12,16 @@ import numpy as np
 
 from ..estimators.api import EstimatorResult, register
 from .bias_curve import default_pilot_grid, estimate_bias_curve
-from .parametric import _resolve_n_v, _run_at_with_plugins
+from .parametric import (
+    _bias_reference,
+    _candidate_grid,
+    _fit_allows_synthetic,
+    _min_positive,
+    _pilot_repeats,
+    _real_only_from_fit,
+    _resolve_n_v,
+    _run_at_with_plugins,
+)
 from ..oracle import oracle_grid
 
 
@@ -31,10 +40,19 @@ def safe_corrected_adaptive_gn(
     fit = estimate_bias_curve(
         n=n, n_v=n_v, X=X, synth_fn=synth_fn, rng=rng, estimand=estimand,
         pilot_grid=default_pilot_grid(n), m=m,
+        pilot_repeats=_pilot_repeats(config),
+        min_positive=_min_positive(config),
+        reference=_bias_reference(config),
     )
+    if not _fit_allows_synthetic(fit, config):
+        return _real_only_from_fit(
+            X, n=n, fit=fit, estimand=estimand, fallback_used=True
+        )
     n_eff = n - n_v
+    grid = _candidate_grid(n_eff, fit, config)
     res = oracle_grid(n=n_eff, a=fit.a_hat, v_n=fit.v_hat,
-                      c=fit.c_hat, beta=fit.beta_hat)
+                      c=fit.c_hat, beta=fit.beta_hat,
+                      grid=grid, include_boundaries=False)
     x_hat = res.x_star
 
     # Safety check (using plug-ins).

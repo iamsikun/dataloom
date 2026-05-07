@@ -29,6 +29,27 @@ class GaussianCopulaGenerator(TabularGenerator):
         self._sorted: dict[str, np.ndarray] = {}
         self._L: np.ndarray | None = None  # Cholesky of corr
 
+    def _regularized_corr(self, Z: np.ndarray) -> np.ndarray:
+        p = Z.shape[1]
+        if Z.shape[0] < 2:
+            return np.eye(p)
+        corr = np.corrcoef(Z, rowvar=False)
+        corr = np.asarray(corr, dtype=float)
+        if corr.shape == ():
+            return np.eye(p)
+        corr = np.nan_to_num(corr, nan=0.0, posinf=0.0, neginf=0.0)
+        corr = 0.5 * (corr + corr.T)
+        np.fill_diagonal(corr, 1.0)
+
+        eigvals, eigvecs = np.linalg.eigh(corr)
+        eigvals = np.maximum(eigvals, self.ridge)
+        corr = (eigvecs * eigvals) @ eigvecs.T
+        scale = np.sqrt(np.maximum(np.diag(corr), self.ridge))
+        corr = corr / np.outer(scale, scale)
+        corr = 0.5 * (corr + corr.T)
+        np.fill_diagonal(corr, 1.0 + self.ridge)
+        return corr
+
     def fit(self, df: pd.DataFrame) -> "GaussianCopulaGenerator":
         # Auto-select numeric columns; bootstrap the rest.
         self._numeric_cols = list(df.select_dtypes(include="number").columns)
@@ -47,8 +68,7 @@ class GaussianCopulaGenerator(TabularGenerator):
             ranks[order] = (np.arange(n) + 0.5) / n
             Z[:, j] = norm.ppf(ranks)
         if len(self._numeric_cols) >= 2:
-            corr = np.corrcoef(Z, rowvar=False)
-            corr = corr + self.ridge * np.eye(corr.shape[0])
+            corr = self._regularized_corr(Z)
             self._L = np.linalg.cholesky(corr)
         elif len(self._numeric_cols) == 1:
             self._L = np.array([[1.0]])
