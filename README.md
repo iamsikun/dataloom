@@ -1,10 +1,10 @@
 # Dataloom
 
-Research code for **Optimal Real-Data Allocation for Synthetic-Data-Augmented
+Research code for **Optimal Real Data Allocation for Synthetic Data Augmented
 Inference**, by **Sikun Xu, Zineng Xu, and Mingduo Zhao** (NeurIPS 2026).
 
 Real observations can estimate a target directly or calibrate a generator that
-produces synthetic observations. This project studies how to divide that real-data
+produces synthetic observations. This project studies how to divide that real data
 budget, accounting for synthetic bias, sampling variance, and the opportunity cost
 of calibration. It includes allocation oracles, adaptive procedures, inference
 diagnostics, and synthetic and semi-synthetic experiments.
@@ -89,7 +89,7 @@ in the camera-ready archive. Dataset and dependency licenses remain their own.
 
 ```bibtex
 @inproceedings{xu2026optimal,
-  title     = {Optimal Real-Data Allocation for Synthetic-Data-Augmented Inference},
+  title     = {Optimal Real Data Allocation for Synthetic Data Augmented Inference},
   author    = {Xu, Sikun and Xu, Zineng and Zhao, Mingduo},
   booktitle = {Advances in Neural Information Processing Systems},
   year      = {2026},

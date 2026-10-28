@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this code, please cite the accompanying paper."
-title: "Dataloom: Optimal Real-Data Allocation for Synthetic-Data-Augmented Inference"
+title: "Dataloom: Optimal Real Data Allocation for Synthetic Data Augmented Inference"
 type: software
 authors:
   - family-names: Xu
@@ -16,7 +16,7 @@ repository-code: "https://github.com/iamsikun/dataloom"
 url: "https://github.com/iamsikun/dataloom/releases/tag/v0.1.0"
 preferred-citation:
   type: conference-paper
-  title: "Optimal Real-Data Allocation for Synthetic-Data-Augmented Inference"
+  title: "Optimal Real Data Allocation for Synthetic Data Augmented Inference"
   authors:
     - family-names: Xu
       given-names: Sikun
