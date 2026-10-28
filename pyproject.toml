@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=77.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dataloom"
+version = "0.1.0"
+description = "Experiments for optimal real-data allocation in synthetic-data-augmented inference"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    {name = "Sikun Xu"},
+    {name = "Zineng Xu"},
+    {name = "Mingduo Zhao"},
+]
+requires-python = ">=3.13"
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.14",
+    "pandas>=2.2",
+    "joblib>=1.4",
+    "matplotlib>=3.9",
+    "pyyaml>=6.0",
+    "pyarrow>=24.0.0",
+]
+
+[project.urls]
+Repository = "https://github.com/iamsikun/dataloom"
+Issues = "https://github.com/iamsikun/dataloom/issues"
+Replication = "https://github.com/iamsikun/dataloom/releases/tag/v0.1.0"
+
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.1.0",
+    "ipywidgets>=8.1.0",
+    "jupyterlab>=4.4.10",
+    "notebook>=7.4.7",
+    "pytest>=8.4.2",
+]

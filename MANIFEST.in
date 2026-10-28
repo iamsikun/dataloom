@@ -1,0 +1,6 @@
+include LICENSE CITATION.cff README.md uv.lock .python-version
+include docs/experiments.md docs/replication.md
+include notebooks/exp_analysis.ipynb notebooks/__dev_setup.py
+include results/full_run_summary.md
+recursive-include configs *.yaml
+recursive-include scripts *.py *.sh

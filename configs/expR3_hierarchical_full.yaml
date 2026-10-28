@@ -1,0 +1,21 @@
+experiment_id: expR3_hierarchical
+profile: full
+schema_version: 2
+seed_root: 20260727
+n_grid: [1000, 5000, 10000]
+beta_grid: [0.4, 1.0]
+rho_grid: [1.0]
+regimes: [[1.0, 1.0], [0.4, 1.0]]
+validation_factor_grid: [0.2, 1.0, 5.0]
+pilot_fits_grid: [1, 4, 16]
+redraws_grid: [2, 8]
+alpha_level: 0.05
+constants: {}
+replications: {default: 2000}
+estimators:
+  - real_only_all
+  - grid_oracle
+  - direct_grid_plugin
+  - uncertainty_buffered_direct_grid
+parallel: {unit: cell, n_jobs: 1, backend: loky}
+output: {results_root: results/}

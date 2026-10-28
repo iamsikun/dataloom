@@ -1,0 +1,25 @@
+experiment_id: expR4_adult_auxiliary
+profile: smoke
+schema_version: 2
+seed_root: 20260727
+n_grid: [500]
+beta_grid: [1.0]
+rho_grid: [1.0]
+candidate_grid: [25, 50, 100, 200, 400]
+pilot_replications: 30
+evaluation_replications: 50
+validation_size: 500
+auxiliary_size: 1000
+ridge: 2.0
+alpha_level: 0.05
+constants: {}
+replications: {default: 50}
+estimators:
+  - real_only_all
+  - synthetic_only_full_calibration
+  - product_surrogate_fixed_share_oracle_alpha
+  - empirical_grid_oracle
+  - externally_piloted_direct_grid
+  - uncertainty_buffered_external_grid
+parallel: {unit: cell, n_jobs: 1, backend: loky}
+output: {results_root: results/}

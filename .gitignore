@@ -1,0 +1,37 @@
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+dist/
+build/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# Local authoring materials: kept on disk, not distributed with the code
+paper/
+.pepper/
+.claude/
+AGENTS.md
+CLAUDE.md
+rebuttal_v1.md
+review.pdf
+docs/model.md
+docs/theory.tex
+docs/theory.pdf
+docs/Formatting_Instructions_For_NeurIPS_2026/
+output/
+*.zip
+
+# Results: raw parquet (large; treat as build artifacts)
+results/exp*__*/raw/
+results/exp*__*/figures/
+results/exp*__*/
+
+# Keep the summary report committed
+!results/full_run_summary.md

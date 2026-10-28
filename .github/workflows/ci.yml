@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MPLBACKEND: Agg
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.3"
+          python-version: "3.13"
+          enable-cache: true
+      - name: Install locked environment
+        run: uv sync --frozen --group dev
+      - name: Unit tests (offline data fixtures)
+        run: uv run --frozen pytest -q
+      - name: Build distribution
+        run: uv build
+      - name: Simulation smoke checks and analysis
+        run: bash scripts/run_remaining_smokes.sh configs/expR1_boundary_smoke.yaml configs/expR2_remainder_smoke.yaml

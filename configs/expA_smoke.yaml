@@ -1,0 +1,36 @@
+experiment_id: expA_tabular
+profile: smoke
+schema_version: 1
+seed_root: 20260502
+
+n_grid: [200, 500, 1000]
+m_factor_grid: [1, 5]
+
+generator: bootstrap_smoothed
+
+estimands:
+  - income_mean
+  - subgroup_gap
+
+constants: {}
+
+replications:
+  default: 50
+
+estimators:
+  - real_only_all
+  - synthetic_only_full_calibration
+  - naive_pooling
+  - corrected_adaptive_gn
+  - safe_corrected_adaptive_gn
+  - validation_debiased_gn
+  - fixed_half_split_plugin_alpha
+  - old_fixed_share_plugin_alpha
+
+parallel:
+  unit: cell
+  n_jobs: -1
+  backend: loky
+
+output:
+  results_root: results/

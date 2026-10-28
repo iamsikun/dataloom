@@ -1,0 +1,22 @@
+experiment_id: expR1_boundary
+profile: full
+schema_version: 2
+seed_root: 20260727
+n_grid: [200, 500, 1000, 2000, 5000, 10000, 20000, 50000]
+beta_grid: [1.0]
+rho_grid: [1.5]
+beta: 1.0
+rho: 1.5
+a: 1.0
+c: 1.0
+v0_grid: [0.75, 1.4142135623730951, 2.0]
+constants: {}
+replications:
+  default: 5000
+estimators:
+  - real_only_all
+  - synthetic_only_full_calibration
+  - product_surrogate_fixed_share_oracle_alpha
+  - corrected_oracle_gn
+parallel: {unit: cell, n_jobs: 1, backend: loky}
+output: {results_root: results/}
